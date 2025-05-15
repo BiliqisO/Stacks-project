@@ -43,6 +43,10 @@
   (ok "Health Token")
 )
 
+(define-read-only (get-contract-owner)
+  (ok (var-get contract-owner))
+)
+
 (define-read-only (get-symbol)
   (ok "HLTH")
 )
@@ -82,5 +86,5 @@
 
 ;; Optional: Initial Mint
 (begin
-  (try! (ft-mint? HLTH u500000000000 'ST1994Y3P6ZDJX476QFSABEFE5T6YMTJT0T7RSQDW.health-treasury))
+  (try! (ft-mint? HLTH u500000000000 (var-get contract-owner)))
 )
