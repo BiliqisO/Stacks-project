@@ -28,7 +28,7 @@
 
 ;; State
 (define-data-var contract-owner principal tx-sender)
-(define-data-var token-uri (optional (string-utf8 256)) (some u"https://example.com/health-token.json"))
+(define-data-var token-uri (optional (string-utf8 256)) (some u"https://mediverse.com/metadata/health-token.json"))
 
 ;; SIP-010 Transfer
 (define-public (transfer (amount uint) (from principal) (to principal) (memo (optional (buff 34))))
