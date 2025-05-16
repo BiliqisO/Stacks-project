@@ -1,13 +1,6 @@
 import { Cl } from "@stacks/transactions";
 import { bool, principal, some, uint } from "@stacks/transactions/dist/cl";
 import { describe, it, expect, beforeAll } from "vitest";
-import { readFileSync } from "fs";
-import { join } from "path";
-
-const roleNftContractSource = readFileSync(
-  join(__dirname, "../contracts/role-nft.clar"),
-  "utf-8"
-);
 
 const accounts = simnet.getAccounts();
 const admin = accounts.get("deployer")!;
