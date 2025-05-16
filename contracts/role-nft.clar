@@ -10,11 +10,14 @@
   )
 )
 
-(impl-trait .sip009-nft-trait)
+
 
 (define-non-fungible-token role-nft uint)
 
 (define-data-var role-token-counter uint u0)
+(define-data-var contract-owner principal tx-sender)
+
+
 
 ;; Enum-style roles
 (define-constant ROLE_PATIENT u0)
@@ -26,15 +29,22 @@
 ;; Maps token ID to metadata URI
 (define-map role-token-uris { token-id: uint } { uri: (string-utf8 256) })
 
+(define-map owner-balances { owner: principal } { count: uint })
+
 ;; Maps token ID to assigned role
 (define-map role-of { token-id: uint } { role: uint })
-(define-public (set-token-uri (uri (string-utf8 256)))
-  (begin
-    (asserts! (is-eq tx-sender admin) (err u401))
-    (var-set token-uri uri)
-    (ok true)
-  )
+(define-read-only (is-owner (sender principal))
+  (is-eq sender (var-get contract-owner))
 )
+
+;; (define-public (set-token-uri (uri (string-utf8 256)))
+;;   (begin
+;;     (asserts! (is-eq tx-sender contract-owner) (err u401))
+;;     (var-set token-uri uri)
+;;     (ok true)
+;;   )
+;; )
+
 (define-public (mint-role (recipient principal) (role uint) (uri (string-utf8 256)))
   (if (not (<= role ROLE_NON_MEDICAL_STAFF))
       (err u400)
@@ -43,35 +53,49 @@
           (var-set role-token-counter next-id)
           (map-set role-token-uris { token-id: next-id } { uri: uri })
           (map-set role-of { token-id: next-id } { role: role })
+           (increment-owner-count recipient)
+          (var-set role-token-counter (+ next-id u1))
           (nft-mint? role-nft next-id recipient)
         )
       )
 ))
 
-;; Get token URI
 (define-read-only (get-token-uri (id uint))
-  (match (map-get role-token-uris { token-id: id })
-    some (ok (get uri some))
-    none (err u404)
+  (match (map-get? role-token-uris { token-id: id })
+    uri-data (ok (get uri uri-data))
+    (err u404)
   )
 )
 
-;; Get role of a token
-(define-read-only (get-role (id uint))
-  (match (map-get role-of { token-id: id })
-    some (ok (get role some))
-    none (err u404)
+(define-private (increment-owner-count (who principal))
+  (let (
+    (current (default-to u0 (get count (map-get? owner-balances { owner: who }))))
+  )
+    (map-set owner-balances { owner: who } { count: (+ current u1) })
   )
 )
+
+;; Call this from `mint-role` after successful mint
 
 ;; SIP-009 required functions
 (define-read-only (get-owner (id uint))
   (nft-get-owner? role-nft id)
 )
 
-(define-read-only (get-balance (who principal))
-  (ok (nft-get-balance role-nft who))
+(define-read-only (get-role (id uint))
+  (match (map-get? role-of { token-id: id })
+    some-data (ok (get role some-data))
+    (err u404)
+  )
 )
+(define-read-only (get-balance (who principal))
+  (match (map-get? owner-balances { owner: who })
+    some-data (ok (get count some-data))
+    (ok u0)
+  )
+)
+
+
 
 (define-public (transfer (id uint) (sender principal) (recipient principal))
   (nft-transfer? role-nft id sender recipient)

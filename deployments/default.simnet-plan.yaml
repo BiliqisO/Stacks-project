@@ -69,4 +69,9 @@ plan:
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/health-token.clar
             clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: role-nft
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/role-nft.clar
+            clarity-version: 3
       epoch: "3.1"

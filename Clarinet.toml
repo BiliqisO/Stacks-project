@@ -14,8 +14,15 @@ epoch = 3.1
 path = 'contracts/health-token.clar'
 clarity_version = 3
 epoch = 3.1
+
+[contracts.role-nft]
+path = 'contracts/role-nft.clar'
+clarity_version = 3
+epoch = 3.1
 [repl.analysis]
 passes = ['check_checker']
+
+
 
 [repl.analysis.check_checker]
 strict = false
