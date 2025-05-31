@@ -19,8 +19,14 @@ epoch = 3.1
 path = 'contracts/role-nft.clar'
 clarity_version = 3
 epoch = 3.1
+
 [contracts.identity-nft]
 path = 'contracts/identity-nft.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.medical-record]
+path = 'contracts/medical-record.clar'
 clarity_version = 3
 epoch = 3.1
 
