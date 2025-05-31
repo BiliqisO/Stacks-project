@@ -22,6 +22,7 @@
 
 ;; Token metadata
 (define-map token-uris { token-id: uint } { uri: (string-utf8 256) })
+(define-map access-balances { owner: principal } { count: uint })
 (define-map token-roles { token-id: uint } { role: uint })
 
 ;; Medical record pointer for each patient
@@ -38,6 +39,7 @@
         (begin
           (var-set token-counter next-id)
           (map-set token-uris { token-id: next-id } { uri: uri })
+          (increment-balance recipient) 
           (map-set token-roles { token-id: next-id } { role: role })
           (nft-mint? identity-nft next-id recipient)
         )
@@ -70,16 +72,16 @@
 
 ;; Read a patient's medical record if permitted
 (define-read-only (get-medical-record (patient principal))
-  (let (
-    (permission (get granted (map-get? access-permissions { patient: patient, grantee: tx-sender })))
-  )
-    (if (is-eq permission true)
-      (match (map-get? medical-records { patient: patient })
-        record (ok (get record-uri record))
-        (err u404)
+  (match (map-get? access-permissions { patient: patient, grantee: tx-sender })
+    access-perm
+      (if (is-eq (get granted access-perm) true)
+        (match (map-get? medical-records { patient: patient })
+          record (ok (get record-uri record))
+          (err u404)
+        )
+        (err u403)
       )
-      (err u403)
-    )
+    (err u403)
   )
 )
 
@@ -100,15 +102,24 @@
   (nft-transfer? identity-nft id sender recipient)
 )
 
-(define-read-only (get-balance (who principal))
+(define-private (increment-balance (who principal))
   (let (
-    (ids (range u1 (+ u1 (var-get token-counter))))
-    (owned-ids (filter (lambda (id)
-                         (is-eq (nft-get-owner? identity-nft id) (some who)))
-                       ids))
-    (count (len owned-ids))
+    (current (default-to u0 (get count (map-get? access-balances { owner: who }))))
   )
-    (ok count)
+    (map-set access-balances { owner: who } { count: (+ current u1) })
+  )
+)
+(define-private (decrement-balance (who principal))
+  (let (
+    (current (default-to u0 (get count (map-get? access-balances { owner: who }))))
+  )
+    (map-set access-balances { owner: who } { count: (if (> current u0) (- current u1) u0) })
+  )
+)
+(define-read-only (get-balance (who principal))
+  (match (map-get? access-balances { owner: who })
+    some-data (ok (get count some-data))
+    (ok u0)
   )
 )
 
