@@ -35,7 +35,7 @@
 
 ;; Mint a role NFT
 (define-public (mint-role (recipient principal) (role uint) (uri (string-utf8 256)))
-  (if (not (<= role ROLE_INSURER))
+   (if (not (<= role ROLE_INSURER))
       (err u400)
       (let ((next-id (+ u1 (var-get token-counter))))
         (begin
@@ -47,28 +47,38 @@
           (nft-mint? identity-nft next-id recipient)
         )
       )
-)
+    )
 )
 ;; Upload or update a patient's record (IPFS pointer)
-(define-public (set-medical-record (record-uri (string-utf8 256)))
+(define-public (set-medical-record (patient principal) (record-uri (string-utf8 256)))
   (let ((maybe-id (map-get? principal-to-token-id { owner: tx-sender })))
     (match maybe-id
       token-data
         (match (map-get? token-roles { token-id: (get token-id token-data) })
           role-data
             (if (is-eq (get role role-data) ROLE_MEDICAL_STAFF)
-              (begin
-                (map-set medical-records { patient: tx-sender } { record-uri: record-uri })
-                (ok true)
-              )
-              (err u401)
+            (match (map-get? access-permissions { patient: patient, grantee: tx-sender })
+                permission
+                    (if (get granted permission)
+                        (begin
+                            (map-set medical-records { patient: tx-sender } { record-uri: record-uri })
+                            (ok true)
+                        )
+           (err u403)
             )
-          (err u404)
-        )
-      (err u404)
+            (err u403)
+            )
+            (err u401)
+            )
+            (err u404)
+            )
+            (err u404)
+            )
+            )
     )
-  )
-)
+
+
+
 
 ;; Grant access to a specific grantee
 (define-public (grant-access (grantee principal))
