@@ -24,12 +24,14 @@
 (define-map token-uris { token-id: uint } { uri: (string-utf8 256) })
 (define-map access-balances { owner: principal } { count: uint })
 (define-map token-roles { token-id: uint } { role: uint })
+(define-map principal-to-token-id { owner: principal } { token-id: uint })
 
 ;; Medical record pointer for each patient
 (define-map medical-records { patient: principal } { record-uri: (string-utf8 256) })
 
 ;; Access permissions: who can access a patients data
 (define-map access-permissions { patient: principal, grantee: principal } { granted: bool })
+
 
 ;; Mint a role NFT
 (define-public (mint-role (recipient principal) (role uint) (uri (string-utf8 256)))
@@ -41,6 +43,7 @@
           (map-set token-uris { token-id: next-id } { uri: uri })
           (increment-balance recipient) 
           (map-set token-roles { token-id: next-id } { role: role })
+          (map-set principal-to-token-id { owner: recipient } { token-id: next-id })
           (nft-mint? identity-nft next-id recipient)
         )
       )
@@ -48,9 +51,22 @@
 )
 ;; Upload or update a patient's record (IPFS pointer)
 (define-public (set-medical-record (record-uri (string-utf8 256)))
-  (begin
-    (map-set medical-records { patient: tx-sender } { record-uri: record-uri })
-    (ok true)
+  (let ((maybe-id (map-get? principal-to-token-id { owner: tx-sender })))
+    (match maybe-id
+      token-data
+        (match (map-get? token-roles { token-id: (get token-id token-data) })
+          role-data
+            (if (is-eq (get role role-data) ROLE_MEDICAL_STAFF)
+              (begin
+                (map-set medical-records { patient: tx-sender } { record-uri: record-uri })
+                (ok true)
+              )
+              (err u401)
+            )
+          (err u404)
+        )
+      (err u404)
+    )
   )
 )
 
