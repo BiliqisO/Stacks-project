@@ -8,6 +8,11 @@ cache_dir = "./.cache"
 # [contracts.counter]
 # path = "contracts/counter.clar"
 
+[contracts.eventchain]
+path = 'contracts/eventchain.clar'
+clarity_version = 3
+epoch = 3.1
+
 [repl.analysis]
 passes = ["check_checker"]
 check_checker = { trusted_sender = false, trusted_caller = false, callee_filter = false }
