@@ -7,6 +7,7 @@ const user1 = accounts.get("wallet_1")!;
 const organizer = accounts.get("wallet_1")!;
 const buyer = accounts.get("wallet_2")!;
 const newUser = accounts.get("wallet_3")!;
+const stranger = accounts.get("wallet_4")!;
 
 describe("EventChain Contract", () => {
   it("should deploy the contract", () => {
@@ -194,12 +195,7 @@ describe("EventChain Contract", () => {
     // Extract the actual event ID from the result
     const eventId = (createEventResult.result as any).value.value;
 
-    simnet.callPublicFn(
-      "eventchain",
-      "buy-ticket",
-      [Cl.uint(eventId)],
-      buyer
-    );
+    simnet.callPublicFn("eventchain", "buy-ticket", [Cl.uint(eventId)], buyer);
 
     simnet.callPublicFn(
       "eventchain",
@@ -215,5 +211,237 @@ describe("EventChain Contract", () => {
       organizer
     );
     expect(checkin.result).toStrictEqual(Cl.ok(Cl.bool(true)));
+  });
+});
+
+describe("EventChain - Edge Case Tests", () => {
+  it("should fail when buying a ticket for a non-existent event", () => {
+    const call = simnet.callPublicFn(
+      "eventchain",
+      "buy-ticket",
+      [Cl.uint(999)], // invalid event ID
+      stranger
+    );
+    expect(call.result).toStrictEqual(Cl.error(Cl.uint(103))); // err u103: event does not exist
+  });
+
+  it("should fail when trying to buy a second ticket with same wallet", () => {
+    // Setup: Add organizer, create event, and buy first ticket
+    simnet.callPublicFn(
+      "eventchain",
+      "add-organizer",
+      [Cl.principal(organizer)],
+      deployer
+    );
+
+    const createResult = simnet.callPublicFn(
+      "eventchain",
+      "create-event",
+      [
+        Cl.stringUtf8("Test Event"),
+        Cl.stringUtf8("Lagos"),
+        Cl.uint(1750000000),
+        Cl.uint(1_000_000),
+        Cl.uint(10),
+      ],
+      organizer
+    );
+
+    const eventId = (createResult.result as any).value.value;
+
+    // First ticket purchase
+    simnet.callPublicFn(
+      "eventchain",
+      "buy-ticket",
+      [Cl.uint(eventId)],
+      buyer
+    );
+
+    // Second ticket purchase with same wallet should fail
+    const secondBuy = simnet.callPublicFn(
+      "eventchain",
+      "buy-ticket",
+      [Cl.uint(eventId)],
+      buyer
+    );
+    expect(secondBuy.result).toStrictEqual(Cl.error(Cl.uint(101))); // err u101: already owns a ticket
+  });
+
+  it("should fail when transferring a used ticket", () => {
+    // Setup: Add organizer, create event, buy ticket, check in, then try to transfer
+    simnet.callPublicFn(
+      "eventchain",
+      "add-organizer",
+      [Cl.principal(organizer)],
+      deployer
+    );
+
+    const createResult = simnet.callPublicFn(
+      "eventchain",
+      "create-event",
+      [
+        Cl.stringUtf8("Test Event"),
+        Cl.stringUtf8("Lagos"),
+        Cl.uint(1750000000),
+        Cl.uint(1_000_000),
+        Cl.uint(10),
+      ],
+      organizer
+    );
+
+    const eventId = (createResult.result as any).value.value;
+
+    // Buy ticket
+    simnet.callPublicFn(
+      "eventchain",
+      "buy-ticket",
+      [Cl.uint(eventId)],
+      buyer
+    );
+
+    // Check in the ticket (mark as used)
+    simnet.callPublicFn(
+      "eventchain",
+      "check-in-ticket",
+      [Cl.uint(eventId), Cl.principal(buyer)],
+      organizer
+    );
+
+    // Try to transfer used ticket should fail
+    const transfer = simnet.callPublicFn(
+      "eventchain",
+      "transfer-ticket",
+      [Cl.uint(eventId), Cl.principal(stranger)],
+      buyer
+    );
+    expect(transfer.result).toStrictEqual(Cl.error(Cl.uint(201))); // err u201: ticket already used
+  });
+
+  it("should fail when someone else tries to check in a ticket", () => {
+    // Setup: Add organizer, create event, buy ticket
+    simnet.callPublicFn(
+      "eventchain",
+      "add-organizer",
+      [Cl.principal(organizer)],
+      deployer
+    );
+
+    const createResult = simnet.callPublicFn(
+      "eventchain",
+      "create-event",
+      [
+        Cl.stringUtf8("Test Event"),
+        Cl.stringUtf8("Lagos"),
+        Cl.uint(1750000000),
+        Cl.uint(1_000_000),
+        Cl.uint(10),
+      ],
+      organizer
+    );
+
+    const eventId = (createResult.result as any).value.value;
+
+    // Buy ticket
+    simnet.callPublicFn(
+      "eventchain",
+      "buy-ticket",
+      [Cl.uint(eventId)],
+      buyer
+    );
+
+    // Stranger tries to check in ticket (not the event creator)
+    const attempt = simnet.callPublicFn(
+      "eventchain",
+      "check-in-ticket",
+      [Cl.uint(eventId), Cl.principal(buyer)],
+      stranger
+    );
+    expect(attempt.result).toStrictEqual(Cl.error(Cl.uint(303))); // err u303: not event creator
+  });
+
+  it("should fail to check in an already used ticket again", () => {
+    // Setup: Add organizer, create event, buy ticket, check in once
+    simnet.callPublicFn(
+      "eventchain",
+      "add-organizer",
+      [Cl.principal(organizer)],
+      deployer
+    );
+
+    const createResult = simnet.callPublicFn(
+      "eventchain",
+      "create-event",
+      [
+        Cl.stringUtf8("Test Event"),
+        Cl.stringUtf8("Lagos"),
+        Cl.uint(1750000000),
+        Cl.uint(1_000_000),
+        Cl.uint(10),
+      ],
+      organizer
+    );
+
+    const eventId = (createResult.result as any).value.value;
+
+    // Buy ticket
+    simnet.callPublicFn(
+      "eventchain",
+      "buy-ticket",
+      [Cl.uint(eventId)],
+      buyer
+    );
+
+    // First check-in
+    simnet.callPublicFn(
+      "eventchain",
+      "check-in-ticket",
+      [Cl.uint(eventId), Cl.principal(buyer)],
+      organizer
+    );
+
+    // Try to check in again should fail
+    const repeat = simnet.callPublicFn(
+      "eventchain",
+      "check-in-ticket",
+      [Cl.uint(eventId), Cl.principal(buyer)],
+      organizer
+    );
+    expect(repeat.result).toStrictEqual(Cl.error(Cl.uint(301))); // err u301: already checked-in
+  });
+
+  it("should fail when non-admin tries to add organizer", () => {
+    const attempt = simnet.callPublicFn(
+      "eventchain",
+      "add-organizer",
+      [Cl.principal(stranger)],
+      buyer // not the admin
+    );
+    expect(attempt.result).toStrictEqual(Cl.error(Cl.uint(401))); // err u401: not admin
+  });
+
+  it("should fail when non-organizer tries to create event", () => {
+    const attempt = simnet.callPublicFn(
+      "eventchain",
+      "create-event",
+      [
+        Cl.stringUtf8("Unauthorized Event"),
+        Cl.stringUtf8("Lagos"),
+        Cl.uint(1750000000),
+        Cl.uint(1_000_000),
+        Cl.uint(10),
+      ],
+      stranger // not an approved organizer
+    );
+    expect(attempt.result).toStrictEqual(Cl.error(Cl.uint(402))); // err u402: not approved organizer
+  });
+
+  it("should fail when transferring ticket that doesn't exist", () => {
+    const transfer = simnet.callPublicFn(
+      "eventchain",
+      "transfer-ticket",
+      [Cl.uint(999), Cl.principal(stranger)], // non-existent event
+      buyer
+    );
+    expect(transfer.result).toStrictEqual(Cl.error(Cl.uint(202))); // err u202: no ticket to transfer
   });
 });
