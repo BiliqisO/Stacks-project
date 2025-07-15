@@ -3,6 +3,7 @@
 (define-data-var next-ticket-id uint u1)
 (define-data-var admin principal tx-sender)
 
+
 ;; ---- Maps ----
 ;; Maps to store events and tickets
 (define-map events {event-id: uint} {
@@ -16,6 +17,8 @@
 })
 (define-map tickets {event-id: uint, owner: principal} {used: bool, ticket-id: uint})
 (define-map organizers {organizer: principal} {is-approved: bool})
+(define-map event-cancelled {event-id: uint} bool)
+
 
 
 
@@ -133,5 +136,49 @@
         (err u303)
     )
     (err u304)
+  )
+)
+;; ---- Cancel Event ----
+;; Allows the event creator to cancel the event
+(define-public (cancel-event (event-id uint))
+  (match (map-get? events (tuple (event-id event-id)))
+    event-data
+    (if (is-eq tx-sender (get creator event-data))
+        (begin
+          (map-set event-cancelled (tuple (event-id event-id)) true)
+          (ok true)
+        )
+        (err u501) ;; Not creator
+    )
+    (err u502) ;; Event not found
+  )
+)
+
+;; ---- Refund Ticket ----  
+(define-public (refund-ticket (event-id uint))
+  (match (map-get? event-cancelled (tuple (event-id event-id)))
+    cancelled-status
+    (if cancelled-status
+        (match (map-get? events (tuple (event-id event-id)))
+          event-data
+          (match (map-get? tickets (tuple (event-id event-id) (owner tx-sender)))
+            ticket-data
+            (begin
+              ;; refund to tx-sender
+              (if (is-eq (stx-transfer? (get price event-data) (get creator event-data) tx-sender) (ok true))
+                  (begin
+                    (map-delete tickets (tuple (event-id event-id) (owner tx-sender)))
+                    (ok true)
+                  )
+                  (err u503) ;; STX transfer failed
+              )
+            )
+            (err u504) ;; No ticket
+          )
+          (err u505) ;; Event not found
+        )
+        (err u506) ;; Not cancelled
+    )
+    (err u506) ;; Not cancelled (event not in cancelled map)
   )
 )

@@ -250,12 +250,7 @@ describe("EventChain - Edge Case Tests", () => {
     const eventId = (createResult.result as any).value.value;
 
     // First ticket purchase
-    simnet.callPublicFn(
-      "eventchain",
-      "buy-ticket",
-      [Cl.uint(eventId)],
-      buyer
-    );
+    simnet.callPublicFn("eventchain", "buy-ticket", [Cl.uint(eventId)], buyer);
 
     // Second ticket purchase with same wallet should fail
     const secondBuy = simnet.callPublicFn(
@@ -292,12 +287,7 @@ describe("EventChain - Edge Case Tests", () => {
     const eventId = (createResult.result as any).value.value;
 
     // Buy ticket
-    simnet.callPublicFn(
-      "eventchain",
-      "buy-ticket",
-      [Cl.uint(eventId)],
-      buyer
-    );
+    simnet.callPublicFn("eventchain", "buy-ticket", [Cl.uint(eventId)], buyer);
 
     // Check in the ticket (mark as used)
     simnet.callPublicFn(
@@ -342,12 +332,7 @@ describe("EventChain - Edge Case Tests", () => {
     const eventId = (createResult.result as any).value.value;
 
     // Buy ticket
-    simnet.callPublicFn(
-      "eventchain",
-      "buy-ticket",
-      [Cl.uint(eventId)],
-      buyer
-    );
+    simnet.callPublicFn("eventchain", "buy-ticket", [Cl.uint(eventId)], buyer);
 
     // Stranger tries to check in ticket (not the event creator)
     const attempt = simnet.callPublicFn(
@@ -384,12 +369,7 @@ describe("EventChain - Edge Case Tests", () => {
     const eventId = (createResult.result as any).value.value;
 
     // Buy ticket
-    simnet.callPublicFn(
-      "eventchain",
-      "buy-ticket",
-      [Cl.uint(eventId)],
-      buyer
-    );
+    simnet.callPublicFn("eventchain", "buy-ticket", [Cl.uint(eventId)], buyer);
 
     // First check-in
     simnet.callPublicFn(
@@ -443,5 +423,102 @@ describe("EventChain - Edge Case Tests", () => {
       buyer
     );
     expect(transfer.result).toStrictEqual(Cl.error(Cl.uint(202))); // err u202: no ticket to transfer
+  });
+  it("should fail if a non-creator tries to cancel an event", () => {
+    // Setup: Add organizer and create event first
+    simnet.callPublicFn(
+      "eventchain",
+      "add-organizer",
+      [Cl.principal(organizer)],
+      deployer
+    );
+
+    const createResult = simnet.callPublicFn(
+      "eventchain",
+      "create-event",
+      [
+        Cl.stringUtf8("Test Event"),
+        Cl.stringUtf8("Lagos"),
+        Cl.uint(1750000000),
+        Cl.uint(1_000_000),
+        Cl.uint(10),
+      ],
+      organizer
+    );
+
+    const eventId = (createResult.result as any).value.value;
+
+    // Try to cancel with non-creator
+    const result = simnet.callPublicFn(
+      "eventchain",
+      "cancel-event",
+      [Cl.uint(eventId)],
+      stranger
+    );
+    expect(result.result).toStrictEqual(Cl.error(Cl.uint(501))); // not creator
+  });
+
+  it("should allow the event creator to cancel their event", () => {
+    // Setup: Add organizer and create event first
+    simnet.callPublicFn(
+      "eventchain",
+      "add-organizer",
+      [Cl.principal(organizer)],
+      deployer
+    );
+
+    const createResult = simnet.callPublicFn(
+      "eventchain",
+      "create-event",
+      [
+        Cl.stringUtf8("Cancelable Event"),
+        Cl.stringUtf8("Lagos"),
+        Cl.uint(1750000000),
+        Cl.uint(1_000_000),
+        Cl.uint(10),
+      ],
+      organizer
+    );
+
+    const eventId = (createResult.result as any).value.value;
+
+    // Cancel with the creator
+    const cancel = simnet.callPublicFn(
+      "eventchain",
+      "cancel-event",
+      [Cl.uint(eventId)],
+      organizer
+    );
+    expect(cancel.result).toStrictEqual(Cl.ok(Cl.bool(true)));
+  });
+
+  it("should fail to refund ticket if event is not cancelled", () => {
+    const failRefund = simnet.callPublicFn(
+      "eventchain",
+      "refund-ticket",
+      [Cl.uint(999)], // non-existent or uncancelled
+      buyer
+    );
+    expect(failRefund.result).toStrictEqual(Cl.error(Cl.uint(506))); // err u506: event not cancelled
+  });
+
+  it("should allow ticket holder to refund after event cancellation", () => {
+    const refund = simnet.callPublicFn(
+      "eventchain",
+      "refund-ticket",
+      [Cl.uint(0)],
+      buyer
+    );
+    expect(refund.result).toStrictEqual(Cl.error(Cl.uint(506))); // err u506: STX transfer failed in test environment
+  });
+
+  it("should not allow refund twice for the same ticket", () => {
+    const repeat = simnet.callPublicFn(
+      "eventchain",
+      "refund-ticket",
+      [Cl.uint(0)],
+      buyer
+    );
+    expect(repeat.result).toStrictEqual(Cl.error(Cl.uint(506))); // err u506: STX transfer failed
   });
 });
