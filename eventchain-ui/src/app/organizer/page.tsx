@@ -76,7 +76,9 @@ export default function OrganizerPage() {
     price: "",
     category: "",
     maxTickets: "",
+    image: null as File | null,
   });
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Function to fetch events from blockchain
   const fetchEvents = async () => {
@@ -279,7 +281,9 @@ export default function OrganizerPage() {
         price: "",
         category: "",
         maxTickets: "",
+        image: null,
       });
+      setImagePreview(null);
       setIsCreateDialogOpen(false);
       alert(
         "Event creation transaction submitted! Please check your wallet and wait for confirmation."
@@ -484,7 +488,7 @@ export default function OrganizerPage() {
                         placeholder="0.5"
                       />
                     </div>
-                    <div className="space-y-2 md:col-span-2">
+                    <div className="space-y-2">
                       <Label htmlFor="maxTickets">Maximum Tickets</Label>
                       <Input
                         id="maxTickets"
@@ -498,6 +502,41 @@ export default function OrganizerPage() {
                         }
                         placeholder="500"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="image">Event Image</Label>
+                      <Input
+                        id="image"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setNewEvent({ ...newEvent, image: file });
+                          
+                          // Create preview URL
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                              setImagePreview(e.target?.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          } else {
+                            setImagePreview(null);
+                          }
+                        }}
+                      />
+                      {imagePreview && (
+                        <div className="mt-2">
+                          <img
+                            src={imagePreview}
+                            alt="Event preview"
+                            className="h-24 w-24 object-cover rounded-md border"
+                          />
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Note: Images are stored locally and not on the blockchain
+                      </p>
                     </div>
                   </div>
                   <div className="flex justify-end space-x-2 mt-6">
