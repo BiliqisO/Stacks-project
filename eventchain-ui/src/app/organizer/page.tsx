@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   Calendar,
@@ -42,45 +42,31 @@ import {
   createEvent,
   readOrganizerStatus,
   addOrganizer,
-  userSession,
+  readOrganizerEvents,
 } from "@/lib/stacks-utils";
 import { useStacks } from "@/hooks/useStacks";
 
-const mockOrganizerEvents = [
-  {
-    id: 1,
-    title: "Web3 Developer Conference 2024",
-    date: "2024-03-15",
-    status: "active",
-    ticketsSold: 245,
-    totalTickets: 500,
-    revenue: "122.5 STX",
-  },
-  {
-    id: 2,
-    title: "Blockchain Workshop",
-    date: "2024-03-10",
-    status: "completed",
-    ticketsSold: 50,
-    totalTickets: 50,
-    revenue: "25 STX",
-  },
-  {
-    id: 3,
-    title: "NFT Meetup",
-    date: "2024-03-25",
-    status: "draft",
-    ticketsSold: 0,
-    totalTickets: 100,
-    revenue: "0 STX",
-  },
-];
+interface Event {
+  id: number;
+  title: string;
+  name?: string;
+  location?: string;
+  creator?: string;
+  timestamp?: number;
+  price?: number;
+  totalTickets?: number;
+  ticketsSold?: number;
+  date?: string;
+  status?: string;
+  revenue?: string;
+}
 
 export default function OrganizerPage() {
-  const [events, setEvents] = useState(mockOrganizerEvents);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const { isSignedIn } = useStacks();
+  const { isSignedIn, address } = useStacks();
   const [newEvent, setNewEvent] = useState({
     title: "",
     description: "",
@@ -92,6 +78,111 @@ export default function OrganizerPage() {
     maxTickets: "",
   });
 
+  // Function to fetch events from blockchain
+  const fetchEvents = async () => {
+    try {
+      setIsLoadingEvents(true);
+      console.log("Fetching events from blockchain for organizer:", address);
+      
+      if (!address) {
+        console.log("No address available, skipping event fetch");
+        setEvents([]);
+        return;
+      }
+      
+      const blockchainEvents = await readOrganizerEvents(address);
+      console.log("Raw blockchain events for organizer:", blockchainEvents);
+      
+      // Transform blockchain events to match our UI format
+      const transformedEvents: Event[] = blockchainEvents.map((event: any, index: number) => {
+        // Handle Clarity data structure from the blockchain
+        const eventData = event.result || event;
+        console.log("Transforming event data:", eventData);
+        
+        // Parse Clarity tuple data
+        let parsedData: any = {};
+        if (eventData && typeof eventData === 'object') {
+          // Handle tuple response from Clarity
+          if (eventData.type === 'tuple' && eventData.data) {
+            parsedData = eventData.data;
+          } else {
+            parsedData = eventData;
+          }
+          
+          // Extract values from Clarity types
+          Object.keys(parsedData).forEach(key => {
+            const value = parsedData[key];
+            if (value && typeof value === 'object') {
+              if (value.type === 'uint') {
+                parsedData[key] = parseInt(value.value.toString());
+              } else if (value.type === 'string-utf8') {
+                parsedData[key] = value.value;
+              } else if (value.type === 'principal') {
+                parsedData[key] = value.value;
+              } else if (value.value !== undefined) {
+                parsedData[key] = value.value;
+              }
+            }
+          });
+        }
+        
+        console.log("Parsed event data:", parsedData);
+        
+        return {
+          id: event.id || index + 1,
+          title: parsedData.name || parsedData.title || "Untitled Event",
+          name: parsedData.name,
+          location: parsedData.location || "TBD",
+          creator: parsedData.creator,
+          timestamp: parsedData.timestamp,
+          price: parsedData.price,
+          totalTickets: parsedData["total-tickets"] || parsedData.totalTickets || 0,
+          ticketsSold: parsedData["tickets-sold"] || parsedData.ticketsSold || 0,
+          date: parsedData.timestamp ? new Date(parsedData.timestamp * 1000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          status: determineEventStatus(parsedData),
+          revenue: calculateRevenue(parsedData),
+        };
+      });
+      
+      console.log("Transformed events:", transformedEvents);
+      setEvents(transformedEvents);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      setEvents([]); // Set empty array on error
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
+
+  // Helper function to determine event status
+  const determineEventStatus = (eventData: any) => {
+    if (!eventData.timestamp) return "draft";
+    
+    const eventTime = eventData.timestamp * 1000;
+    const now = Date.now();
+    
+    if (eventTime > now) {
+      return "active"; // Future event
+    } else {
+      return "completed"; // Past event
+    }
+  };
+
+  // Helper function to calculate revenue
+  const calculateRevenue = (eventData: any) => {
+    const ticketsSold = eventData["tickets-sold"] || eventData.ticketsSold || 0;
+    const price = eventData.price || 0;
+    const revenue = (ticketsSold * price) / 1000000; // Convert from microSTX to STX
+    return `${revenue.toFixed(2)} STX`;
+  };
+
+  // Load events on component mount and when address changes
+  useEffect(() => {
+    if (isSignedIn && address) {
+      fetchEvents();
+    }
+  }, [isSignedIn, address]);
+
   const handleCreateEvent = async () => {
     if (!isSignedIn) {
       alert("Please connect your Stacks wallet first");
@@ -100,26 +191,9 @@ export default function OrganizerPage() {
 
     setIsCreating(true);
     try {
-      const userData = userSession.loadUserData();
-      console.log("=== USER SESSION DEBUG ===");
-      console.log("User data:", userData);
-      console.log("Profile:", userData?.profile);
-      console.log("STX Address object:", userData?.profile?.stxAddress);
-
-      const userAddress =
-        userData?.profile?.stxAddress?.testnet ||
-        userData?.profile?.stxAddress?.mainnet;
-      console.log(
-        "User address (testnet):",
-        userData?.profile?.stxAddress?.testnet
-      );
-      console.log(
-        "User address (mainnet):",
-        userData?.profile?.stxAddress?.mainnet
-      );
-      console.log("Final user address:", userAddress);
-
-      if (!userAddress) {
+      console.log("=== USER ADDRESS DEBUG ===");
+      console.log("Address from useStacks:", address);
+      if (!address) {
         alert(
           "Could not get your wallet address. Please reconnect your wallet."
         );
@@ -127,9 +201,9 @@ export default function OrganizerPage() {
         return;
       }
 
-      console.log("Checking organizer status for:", userAddress);
+      console.log("Checking organizer status for:", address);
 
-      const isOrganizer = await readOrganizerStatus(userAddress);
+      const isOrganizer = await readOrganizerStatus(address);
       console.log("Is organizer:", isOrganizer);
 
       if (!isOrganizer) {
@@ -143,13 +217,27 @@ export default function OrganizerPage() {
         }
 
         console.log("Adding user as organizer...");
-        await addOrganizer(userAddress);
+        await addOrganizer(address);
 
-        alert(
-          "Organizer registration submitted! Please wait for the transaction to confirm, then try creating the event again."
-        );
-        setIsCreating(false);
-        return;
+        console.log("Waiting for transaction to confirm...");
+        // Wait a bit for the transaction to potentially confirm
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Check again if user is now an organizer
+        console.log("Re-checking organizer status after registration...");
+        const isOrganizerAfterRegistration = await readOrganizerStatus(address);
+        
+        if (isOrganizerAfterRegistration) {
+          console.log("✅ Organizer status confirmed! Continuing with event creation...");
+          // Continue with event creation - don't return here
+        } else {
+          console.log("⚠️ Organizer status not yet confirmed, but transaction was submitted");
+          alert(
+            "Organizer registration submitted! The transaction may still be confirming. Please wait a moment and try creating the event again."
+          );
+          setIsCreating(false);
+          return;
+        }
       }
 
       const timestamp = Math.floor(
@@ -177,17 +265,10 @@ export default function OrganizerPage() {
         Number.parseInt(newEvent.maxTickets)
       );
 
-      // Add to local state for UI update
-      const event = {
-        id: events.length + 1,
-        title: newEvent.title,
-        date: newEvent.date,
-        status: "pending", // Set as pending until transaction is confirmed
-        ticketsSold: 0,
-        totalTickets: Number.parseInt(newEvent.maxTickets) || 0,
-        revenue: "0 STX",
-      };
-      setEvents([...events, event]);
+      // Refresh events from blockchain after successful creation
+      setTimeout(() => {
+        fetchEvents(); // Refresh the events list from blockchain
+      }, 2000); // Wait 2 seconds for potential blockchain confirmation
 
       setNewEvent({
         title: "",
@@ -222,41 +303,19 @@ export default function OrganizerPage() {
     }
 
     try {
-      const userData = userSession.loadUserData();
       console.log("=== CHECK ORGANIZER STATUS DEBUG ===");
-      console.log("User data:", userData);
+      console.log("Address from useStacks:", address);
 
-      const userAddress =
-        userData?.profile?.stxAddress?.testnet ||
-        userData?.profile?.stxAddress?.mainnet;
-      console.log(
-        "User address (testnet):",
-        userData?.profile?.stxAddress?.testnet
-      );
-      console.log(
-        "User address (mainnet):",
-        userData?.profile?.stxAddress?.mainnet
-      );
-      console.log("Final user address:", userAddress);
-
-      if (!userAddress) {
+      if (!address) {
         alert(
           "Could not get your wallet address. Please reconnect your wallet."
         );
         return;
       }
 
-      // Additional validation to make sure we don't use the contract address
-      if (userAddress === "ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9") {
-        console.error("ERROR: User address is same as contract address!");
-        alert(
-          "Error: Invalid user address detected. Please disconnect and reconnect your wallet."
-        );
-        return;
-      }
 
-      console.log("Checking organizer status for:", userAddress);
-      const isOrganizer = await readOrganizerStatus(userAddress);
+      console.log("Checking organizer status for:", address);
+      const isOrganizer = await readOrganizerStatus(address);
 
       if (isOrganizer) {
         alert("You are registered as an organizer! You can create events.");
@@ -265,7 +324,7 @@ export default function OrganizerPage() {
           "You are not registered as an organizer yet. Would you like to register now?"
         );
         if (shouldRegister) {
-          await addOrganizer(userAddress);
+          await addOrganizer(address);
           alert(
             "Organizer registration submitted! Please wait for confirmation."
           );
@@ -518,7 +577,14 @@ export default function OrganizerPage() {
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">147.5 STX</div>
+                  <div className="text-2xl font-bold">
+                    {events.reduce((total, event) => {
+                      const ticketsSold = event.ticketsSold || 0;
+                      const price = event.price || 0;
+                      const revenue = (ticketsSold * price) / 1000000; // Convert from microSTX to STX
+                      return total + revenue;
+                    }, 0).toFixed(2)} STX
+                  </div>
                 </CardContent>
               </Card>
               <Card>
@@ -529,14 +595,25 @@ export default function OrganizerPage() {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">295</div>
+                  <div className="text-2xl font-bold">
+                    {events.reduce((total, event) => total + (event.ticketsSold || 0), 0)}
+                  </div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Events List */}
             <div className="space-y-4">
-              {events.map((event) => (
+              {isLoadingEvents ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading events from blockchain...</p>
+                </div>
+              ) : events.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No events found. Create your first event!</p>
+                </div>
+              ) : (
+                events.map((event) => (
                 <Card key={event.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -547,8 +624,8 @@ export default function OrganizerPage() {
                           </CardTitle>
                           <CardDescription>{event.date}</CardDescription>
                         </div>
-                        <Badge className={getStatusColor(event.status)}>
-                          {event.status}
+                        <Badge className={getStatusColor(event.status || "active")}>
+                          {event.status || "active"}
                         </Badge>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -594,7 +671,7 @@ export default function OrganizerPage() {
                         </p>
                         <p className="text-lg font-semibold">
                           {Math.round(
-                            (event.ticketsSold / event.totalTickets) * 100
+                            ((event.ticketsSold || 0) / (event.totalTickets || 1)) * 100
                           )}
                           %
                         </p>
@@ -602,7 +679,8 @@ export default function OrganizerPage() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                ))
+              )}
             </div>
           </TabsContent>
 

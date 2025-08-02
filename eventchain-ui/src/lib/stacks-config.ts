@@ -1,27 +1,28 @@
-import * as StacksNet from "@stacks/network"
+import { STACKS_TESTNET } from "@stacks/network";
 
-/**
- * Return a Stacks network instance regardless of whether
- * `StacksTestnet` is exported as a class or a factory function.
- */
-function getTestnet() {
-  const T = (StacksNet as any).StacksTestnet
-  // If T is a class (has a prototype with a constructor) → use `new`.
-  if (typeof T === "function" && T.prototype && T.prototype.constructor === T) {
-    return new T()
-  }
-  // Otherwise assume it’s a factory function → call it directly.
-  return typeof T === "function" ? T() : T
-}
+export const NETWORK = STACKS_TESTNET;
+export const CONTRACT_ADDRESS =
+  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
+  "ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9";
 
-export const NETWORK = getTestnet() // Use `getMainnet()` for production
-export const CONTRACT_ADDRESS = "ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9"
-export const CONTRACT_NAME = "eventchain"
+export const CONTRACT_NAME =
+  process.env.NEXT_PUBLIC_CONTRACT_NAME || "eventchain-v3";
+
+// Ensure network has coreApiUrl property
+const networkInstance = NETWORK;
+console.log("Network instance:", networkInstance);
+
+const NETWORK_CONFIG = {
+  ...networkInstance,
+  coreApiUrl: "https://api.testnet.hiro.so",
+};
 
 export const STACKS_CONFIG = {
-  network: NETWORK,
+  network: NETWORK_CONFIG,
   contractAddress: CONTRACT_ADDRESS,
   contractName: CONTRACT_NAME,
   appName: "EventChain",
   appIconUrl: "/logo.png",
-}
+};
+
+console.log("STACKS_CONFIG:", STACKS_CONFIG);

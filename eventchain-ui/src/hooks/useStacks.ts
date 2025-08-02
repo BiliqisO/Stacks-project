@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { userSession } from "@/lib/stacks-utils";
+import { isConnected, getLocalStorage } from "@stacks/connect";
 
 export const useStacks = () => {
   const [userData, setUserData] = useState<any>(null);
@@ -17,6 +18,19 @@ export const useStacks = () => {
       const userData = userSession.loadUserData();
       setUserData(userData);
       setIsSignedIn(true);
+    } else if (isConnected()) {
+      setIsSignedIn(true);
+      const data = getLocalStorage();
+      if (data?.addresses?.stx && data.addresses.stx.length > 0) {
+        setUserData({
+          profile: {
+            stxAddress: {
+              testnet: data.addresses.stx[0].address,
+              mainnet: data.addresses.stx[0].address,
+            }
+          }
+        });
+      }
     }
   }, []);
 
@@ -24,12 +38,18 @@ export const useStacks = () => {
     if (userData) {
       return userData.profile.stxAddress.testnet;
     }
+    if (isConnected()) {
+      const data = getLocalStorage();
+      if (data?.addresses?.stx && data.addresses.stx.length > 0) {
+        return data.addresses.stx[0].address;
+      }
+    }
     return null;
   };
 
   return {
     userData,
-    isSignedIn,
+    isSignedIn: isSignedIn || isConnected(),
     address: getAddress(),
   };
 };

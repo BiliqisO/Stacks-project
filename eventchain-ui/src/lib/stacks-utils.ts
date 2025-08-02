@@ -1,8 +1,11 @@
 import {
   AppConfig,
   UserSession,
-  showConnect,
-  openContractCall,
+  connect,
+  disconnect,
+  request,
+  isConnected,
+  getLocalStorage,
 } from "@stacks/connect";
 import * as Tx from "@stacks/transactions";
 import { STACKS_CONFIG } from "./stacks-config";
@@ -14,44 +17,30 @@ const getCoreApiUrl = () => {
   return STACKS_CONFIG.network?.coreApiUrl || "https://api.testnet.hiro.so";
 };
 
-function getWalletProvider() {
-  if (typeof window !== "undefined") {
-    if ((window as any).LeatherProvider) return (window as any).LeatherProvider;
-    if ((window as any).StacksProvider) return (window as any).StacksProvider;
-  }
-  return null;
-}
+async function callContractWithRequest(options: any) {
+  try {
+    console.log("functionName", options.functionName);
+    console.log("functionArgs", options.functionArgs);
 
-async function callContractWithProvider(options: any) {
-  const provider = getWalletProvider();
-  if (provider && typeof provider.request === "function") {
-    const params = {
-      contractAddress: options.contractAddress,
-      contractName: options.contractName,
+    const response = await request("stx_callContract", {
+      contract:
+        `${options.contractAddress}.${options.contractName}` as `${string}.${string}`,
       functionName: options.functionName,
-      functionArgs: options.functionArgs.map((arg: any) => arg.toString()),
-      network: options.network,
-      postConditionMode: options.postConditionMode,
-    };
-    try {
-      const result = await provider.request({
-        method: "stx_callContract",
-        params,
-      });
-      if (options.onFinish) options.onFinish(result);
-      return result;
-    } catch (err) {
-      console.error("Direct provider call failed:", err);
-      console.error("Error details:", JSON.stringify(err));
-      if (options.onCancel) options.onCancel();
-      throw err;
-    }
-  } else {
-    return openContractCall(options);
+      functionArgs: options.functionArgs,
+      network: options.network?.chainId === 2147483648 ? "testnet" : "mainnet",
+    });
+
+    console.log("Transaction ID:", response);
+    if (options.onFinish) options.onFinish(response);
+    return response;
+  } catch (error) {
+    console.error("Contract call failed:", error);
+    if (options.onCancel) options.onCancel();
+    throw error;
   }
 }
 
-export const connectWallet = () => {
+export const connectWallet = async () => {
   console.log("=== Connect Wallet Debug ===");
 
   if (typeof window !== "undefined") {
@@ -66,24 +55,17 @@ export const connectWallet = () => {
     );
   }
 
-  showConnect({
-    appDetails: {
-      name: STACKS_CONFIG.appName,
-      icon: STACKS_CONFIG.appIconUrl,
-    },
-    redirectTo: "/",
-    onFinish: () => {
-      console.log(" Wallet connected successfully");
-      window.location.reload();
-    },
-    onCancel: () => {
-      console.log(" Wallet connection cancelled");
-    },
-    userSession,
-  });
+  try {
+    await connect();
+    console.log("Wallet connected successfully");
+    window.location.reload();
+  } catch (error) {
+    console.error("Connection failed:", error);
+  }
 };
 
 export const disconnectWallet = () => {
+  disconnect();
   userSession.signUserOut("/");
 };
 
@@ -96,13 +78,23 @@ export const createEvent = async (
 ) => {
   console.log("=== Create Event Debug ===");
 
-  // Check if user is signed in
-  if (!userSession.isUserSignedIn()) {
-    throw new Error("User is not signed in. Please connect your wallet first.");
+  // Check if user is connected
+  if (!isConnected() && !userSession.isUserSignedIn()) {
+    throw new Error("User is not connected. Please connect your wallet first.");
   }
 
-  const userData = userSession.loadUserData();
-  console.log("User signed in:", userData.profile.stxAddress.testnet);
+  let userAddress = null;
+  if (isConnected()) {
+    const data = getLocalStorage();
+    if (data?.addresses?.stx && data.addresses.stx.length > 0) {
+      userAddress = data.addresses.stx[0].address;
+    }
+  } else if (userSession.isUserSignedIn()) {
+    const userData = userSession.loadUserData();
+    userAddress = userData.profile.stxAddress.testnet;
+  }
+
+  console.log("User address:", userAddress);
 
   const functionArgs = [
     Tx.stringUtf8CV(name),
@@ -159,11 +151,8 @@ export const createEvent = async (
   }
 
   try {
-    console.log(
-      "Calling contract with provider (or fallback) with options:",
-      options
-    );
-    await callContractWithProvider(options);
+    console.log("Calling contract with request method with options:", options);
+    await callContractWithRequest(options);
     console.log("Contract call executed - wallet popup should appear");
   } catch (error) {
     console.error("Error in createEvent:", error);
@@ -195,7 +184,7 @@ export const buyTicket = async (
     },
   };
 
-  await openContractCall(options);
+  await callContractWithRequest(options);
 };
 
 export const transferTicket = async (eventId: number, toAddress: string) => {
@@ -213,7 +202,7 @@ export const transferTicket = async (eventId: number, toAddress: string) => {
     },
   };
 
-  await openContractCall(options);
+  await callContractWithRequest(options);
 };
 
 export const checkInTicket = async (eventId: number, userAddress: string) => {
@@ -231,7 +220,7 @@ export const checkInTicket = async (eventId: number, userAddress: string) => {
     },
   };
 
-  await openContractCall(options);
+  await callContractWithRequest(options);
 };
 
 export const cancelEvent = async (eventId: number) => {
@@ -249,7 +238,7 @@ export const cancelEvent = async (eventId: number) => {
     },
   };
 
-  await openContractCall(options);
+  await callContractWithRequest(options);
 };
 
 export const refundTicket = async (eventId: number) => {
@@ -267,7 +256,7 @@ export const refundTicket = async (eventId: number) => {
     },
   };
 
-  await openContractCall(options);
+  await callContractWithRequest(options);
 };
 
 export const addOrganizer = async (organizerAddress: string) => {
@@ -326,13 +315,10 @@ export const addOrganizer = async (organizerAddress: string) => {
 
   try {
     console.log(
-      "Calling contract with provider (or fallback) for addOrganizer with options:",
+      "Calling contract with request method for addOrganizer with options:",
       options
     );
-    await callContractWithProvider(options);
-    console.log(
-      "AddOrganizer contract call executed - wallet popup should appear"
-    );
+    await callContractWithRequest(options);
   } catch (error) {
     console.error(" Error in addOrganizer:", error);
     throw error;
@@ -354,39 +340,182 @@ export const readOrganizers = async () => {
   }
 };
 
-export const readEvents = async () => {
+export const readOrganizerEvents = async (organizerAddress: string) => {
   try {
-    // Get total events count first
-    const totalEventsResponse = await fetch(
-      `${getCoreApiUrl()}/v2/contracts/call-read/${
-        STACKS_CONFIG.contractAddress
-      }/${STACKS_CONFIG.contractName}/get-total-events`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sender: STACKS_CONFIG.contractAddress,
-          arguments: [],
-        }),
-      }
-    );
+    console.log("Fetching events for organizer:", organizerAddress);
 
-    if (!totalEventsResponse.ok) {
-      console.log("Could not get total events count");
+    // Get the list of event IDs for this organizer
+    const organizerEventsResult = await Tx.fetchCallReadOnlyFunction({
+      contractAddress: STACKS_CONFIG.contractAddress,
+      contractName: STACKS_CONFIG.contractName,
+      functionName: "get-organizer-events",
+      functionArgs: [Tx.principalCV(organizerAddress)],
+      network: STACKS_CONFIG.network,
+      senderAddress: organizerAddress,
+    });
+
+    console.log("Raw organizer events result:", organizerEventsResult);
+
+    // Parse the list response from Clarity
+    let eventIds: number[] = [];
+    if (organizerEventsResult && typeof organizerEventsResult === "object") {
+      // Handle Clarity list response - check both 'list' and 'value' properties
+      const listItems =
+        (organizerEventsResult as any).list ||
+        (organizerEventsResult as any).value;
+
+      if (
+        (organizerEventsResult as any).type === "list" &&
+        Array.isArray(listItems)
+      ) {
+        eventIds = listItems
+          .map((item: any) => {
+            if (item && typeof item === "object" && item.type === "uint") {
+              // Handle BigInt values
+              const value = item.value;
+              if (typeof value === "bigint") {
+                return Number(value);
+              }
+              return parseInt(value.toString());
+            }
+            return parseInt(item.toString());
+          })
+          .filter((id) => !isNaN(id));
+      }
+      // Handle other possible formats
+      else if (Array.isArray(organizerEventsResult)) {
+        eventIds = organizerEventsResult
+          .map((id: any) => {
+            if (typeof id === "number") return id;
+            if (typeof id === "object" && id.type === "uint") {
+              const value = id.value;
+              if (typeof value === "bigint") {
+                return Number(value);
+              }
+              return parseInt(String(value));
+            }
+            return parseInt(String(id));
+          })
+          .filter((id) => !isNaN(id));
+      }
+    }
+
+    console.log("Parsed event IDs for organizer:", eventIds);
+
+    // If no events found, return empty array
+    if (eventIds.length === 0) {
+      console.log("No events found for organizer");
       return [];
     }
 
-    const totalEventsData = await totalEventsResponse.json();
-    console.log("Raw total events response:", totalEventsData);
+    // Fetch individual event details
+    const events = [];
+    for (const eventId of eventIds) {
+      try {
+        console.log(`Fetching details for event ${eventId}`);
+        const eventResult = await Tx.fetchCallReadOnlyFunction({
+          contractAddress: STACKS_CONFIG.contractAddress,
+          contractName: STACKS_CONFIG.contractName,
+          functionName: "get-event",
+          functionArgs: [Tx.uintCV(eventId)],
+          network: STACKS_CONFIG.network,
+          senderAddress: organizerAddress,
+        });
+
+        console.log(`Event ${eventId} result:`, eventResult);
+        console.log(`Event ${eventId} result type:`, typeof eventResult);
+
+        if (
+          eventResult &&
+          eventResult !== "(none)" &&
+          (eventResult as any).type !== "none"
+        ) {
+          // Parse the event data from the optional response
+          let eventData = null;
+          if (
+            (eventResult as any).type === "some" &&
+            (eventResult as any).value
+          ) {
+            // For 'some' type, get the inner value
+            const innerValue = (eventResult as any).value;
+            if (innerValue.type === "tuple" && innerValue.value) {
+              // Extract the tuple data and convert BigInt values
+              const tupleData = innerValue.value;
+              eventData = {
+                creator: tupleData.creator?.value || "",
+                name: tupleData.name?.value || "",
+                location: tupleData.location?.value || "",
+                timestamp: tupleData.timestamp?.value
+                  ? Number(tupleData.timestamp.value)
+                  : 0,
+                price: tupleData.price?.value
+                  ? Number(tupleData.price.value)
+                  : 0,
+                "total-tickets": tupleData["total-tickets"]?.value
+                  ? Number(tupleData["total-tickets"].value)
+                  : 0,
+                "tickets-sold": tupleData["tickets-sold"]?.value
+                  ? Number(tupleData["tickets-sold"].value)
+                  : 0,
+              };
+            }
+          } else if ((eventResult as any).type !== "none") {
+            eventData = eventResult;
+          }
+
+          if (eventData) {
+            console.log(`Parsed event ${eventId} data:`, eventData);
+            events.push({
+              id: eventId,
+              result: eventData,
+            });
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching event ${eventId}:`, error);
+      }
+    }
+
+    console.log("Final organizer events data:", events);
+    return events;
+  } catch (error) {
+    console.error("Error reading organizer events:", error);
+    return [];
+  }
+};
+
+export const readEvents = async () => {
+  try {
+    // Get total events count first using fetchCallReadOnlyFunction
+    const totalEventsResult = await Tx.fetchCallReadOnlyFunction({
+      contractAddress: STACKS_CONFIG.contractAddress,
+      contractName: STACKS_CONFIG.contractName,
+      functionName: "get-total-events",
+      functionArgs: [],
+      network: STACKS_CONFIG.network,
+      senderAddress: STACKS_CONFIG.contractAddress,
+    });
+
+    console.log("Raw total events response:", totalEventsResult);
 
     // Parse the Clarity result properly
     let totalEvents = 0;
-    if (totalEventsData.result) {
-      const resultStr = totalEventsData.result.toString();
-      if (resultStr.startsWith("u")) {
-        totalEvents = parseInt(resultStr.substring(1));
+    if (totalEventsResult) {
+      // Handle different possible return formats
+      if (typeof totalEventsResult === "number") {
+        totalEvents = totalEventsResult;
+      } else if (
+        typeof totalEventsResult === "object" &&
+        totalEventsResult.type === "uint"
+      ) {
+        totalEvents = parseInt(String(totalEventsResult.value || "0"));
       } else {
-        totalEvents = parseInt(resultStr);
+        const resultStr = totalEventsResult.toString();
+        if (resultStr.startsWith("u")) {
+          totalEvents = parseInt(resultStr.substring(1));
+        } else {
+          totalEvents = parseInt(resultStr);
+        }
       }
     }
 
@@ -405,28 +534,20 @@ export const readEvents = async () => {
     const events = [];
     for (let i = 1; i <= Math.min(totalEvents, 10); i++) {
       try {
-        const eventResponse = await fetch(
-          `${getCoreApiUrl()}/v2/contracts/call-read/${
-            STACKS_CONFIG.contractAddress
-          }/${STACKS_CONFIG.contractName}/get-event`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              sender: STACKS_CONFIG.contractAddress,
-              arguments: [`u${i}`],
-            }),
-          }
-        );
+        const eventResult = await Tx.fetchCallReadOnlyFunction({
+          contractAddress: STACKS_CONFIG.contractAddress,
+          contractName: STACKS_CONFIG.contractName,
+          functionName: "get-event",
+          functionArgs: [Tx.uintCV(i)],
+          network: STACKS_CONFIG.network,
+          senderAddress: STACKS_CONFIG.contractAddress,
+        });
 
-        if (eventResponse.ok) {
-          const eventData = await eventResponse.json();
-          if (eventData.result && eventData.result !== "(none)") {
-            events.push({
-              id: i,
-              ...eventData.result, // This will need parsing based on contract response format
-            });
-          }
+        if (eventResult && (eventResult as any) !== "(none)") {
+          events.push({
+            id: i,
+            result: eventResult, // Store the raw result for processing
+          });
         }
       } catch (error) {
         console.error(`Error fetching event ${i}:`, error);
@@ -445,33 +566,41 @@ export const readOrganizerStatus = async (organizerAddress: string) => {
   try {
     console.log("Checking organizer status for address:", organizerAddress);
 
-    const response = await fetch(
-      `${getCoreApiUrl()}/v2/contracts/call-read/${
-        STACKS_CONFIG.contractAddress
-      }/${STACKS_CONFIG.contractName}/is-organizer`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sender: STACKS_CONFIG.contractAddress,
-          arguments: [`'${organizerAddress}`], // Properly format principal argument
-        }),
-      }
-    );
+    // Use the fetchCallReadOnlyFunction from @stacks/transactions for proper serialization
+    const result = await Tx.fetchCallReadOnlyFunction({
+      contractAddress: STACKS_CONFIG.contractAddress,
+      contractName: STACKS_CONFIG.contractName,
+      functionName: "is-organizer",
+      functionArgs: [Tx.principalCV(organizerAddress)],
+      network: STACKS_CONFIG.network,
+      senderAddress: organizerAddress,
+    });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("API Error:", response.status, errorText);
-      throw new Error(
-        `HTTP error! status: ${response.status}, body: ${errorText}`
-      );
+    console.log("Organizer status response for", organizerAddress, ":", result);
+
+    // Handle different possible return types from the contract
+    if (typeof result === "boolean") {
+      return result;
     }
 
-    const data = await response.json();
-    console.log("Organizer status response for", organizerAddress, ":", data);
+    // Handle ClarityValue - check if it's a boolean CV or has type 'true'
+    if (result && typeof result === "object" && "type" in result) {
+      const resultAny = result as any;
+      // Handle the case where type is 'true' (meaning true boolean)
+      if (resultAny.type === "true") {
+        return true;
+      }
+      // Handle the case where type is 'false' (meaning false boolean)
+      if (resultAny.type === "false") {
+        return false;
+      }
+      // Handle standard boolean CV
+      return resultAny.type === "bool" && resultAny.value === true;
+    }
 
-    // Parse boolean result (should be 'true' or 'false')
-    return data.result === "true";
+    // Fallback - check string representation
+    const resultStr = (result as any)?.toString() || "";
+    return resultStr === "true" || resultStr.includes("true");
   } catch (error) {
     console.error("Error reading organizer status:", error);
     return false;
@@ -554,8 +683,8 @@ export const readPlatformStats = async () => {
 export const testWalletPopup = () => {
   console.log("=== Testing Wallet Popup ===");
 
-  if (!userSession.isUserSignedIn()) {
-    console.log("❌ User not signed in - cannot test transaction");
+  if (!isConnected() && !userSession.isUserSignedIn()) {
+    console.log("❌ User not connected - cannot test transaction");
     return;
   }
 
@@ -576,8 +705,8 @@ export const testWalletPopup = () => {
 
   console.log("Attempting test transaction...");
   try {
-    openContractCall(testOptions);
-    console.log("✅ Test openContractCall executed");
+    callContractWithRequest(testOptions);
+    console.log("✅ Test contract call executed");
   } catch (error) {
     console.error("❌ Test transaction failed:", error);
   }
@@ -632,14 +761,23 @@ export const testContractConnection = async () => {
 export const addOrganizerDebug = async (organizerAddress: string) => {
   console.log("=== Add Organizer Debug ===");
 
-  // Check if user is signed in
-  if (!userSession.isUserSignedIn()) {
-    throw new Error("User is not signed in. Please connect your wallet first.");
+  // Check if user is connected
+  if (!isConnected() && !userSession.isUserSignedIn()) {
+    throw new Error("User is not connected. Please connect your wallet first.");
   }
 
-  const userData = userSession.loadUserData();
-  console.log("User data:", userData);
-  console.log("User address:", userData.profile.stxAddress.testnet);
+  let userAddress = null;
+  if (isConnected()) {
+    const data = getLocalStorage();
+    if (data?.addresses?.stx && data.addresses.stx.length > 0) {
+      userAddress = data.addresses.stx[0].address;
+    }
+  } else if (userSession.isUserSignedIn()) {
+    const userData = userSession.loadUserData();
+    userAddress = userData.profile.stxAddress.testnet;
+  }
+
+  console.log("User address:", userAddress);
 
   // First test contract connection
   console.log("Testing contract connection...");
@@ -695,8 +833,8 @@ export const addOrganizerDebug = async (organizerAddress: string) => {
       },
     };
 
-    // Call openContractCall - it should trigger the wallet popup
-    await openContractCall(enhancedOptions);
+    // Call request method - it should trigger the wallet popup
+    await callContractWithRequest(enhancedOptions);
     console.log("✅ Contract call initiated - wallet popup should appear");
   } catch (error) {
     console.error("❌ Error in addOrganizer:", error);
