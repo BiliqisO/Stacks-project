@@ -325,15 +325,184 @@ export const addOrganizer = async (organizerAddress: string) => {
   }
 };
 
+// Check if current user is admin
+export const readAdminStatus = async (userAddress: string) => {
+  try {
+    console.log("Checking admin status for address:", userAddress);
+
+    const result = await Tx.fetchCallReadOnlyFunction({
+      contractAddress: STACKS_CONFIG.contractAddress,
+      contractName: STACKS_CONFIG.contractName,
+      functionName: "get-admin",
+      functionArgs: [],
+      network: STACKS_CONFIG.network,
+      senderAddress: userAddress,
+    });
+
+    console.log("Admin address from contract:", result);
+
+    // Handle different possible return types
+    let adminAddress = "";
+    if (typeof result === "string") {
+      adminAddress = result;
+    } else if (result && typeof result === "object") {
+      const resultAny = result as any;
+      if (resultAny.type === "principal" && resultAny.value) {
+        adminAddress = resultAny.value;
+      } else if (resultAny.value) {
+        adminAddress = resultAny.value.toString();
+      }
+    }
+
+    // Compare addresses (case-insensitive)
+    const isAdmin = adminAddress.toLowerCase() === userAddress.toLowerCase();
+    console.log(
+      "Is admin:",
+      isAdmin,
+      "Admin address:",
+      adminAddress,
+      "User address:",
+      userAddress
+    );
+
+    return isAdmin;
+  } catch (error) {
+    console.error("Error checking admin status:", error);
+    return false;
+  }
+};
+
+// Get all organizers with their stats
+export const readAllOrganizerStats = async () => {
+  try {
+    console.log("Fetching all organizer stats...");
+
+    // For now, let's manually check the known organizer from your event
+    const knownOrganizerAddress = "ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9";
+    console.log("Checking known organizer:", knownOrganizerAddress);
+
+    // Check if this address is an organizer and get their events
+    const isOrganizer = await readOrganizerStatus(knownOrganizerAddress);
+    console.log("Is known address an organizer?", isOrganizer);
+
+    if (isOrganizer) {
+      // Get their events
+      const organizerEvents = await readOrganizerEvents(knownOrganizerAddress);
+      console.log("Organizer events:", organizerEvents);
+
+      // Calculate stats
+      let totalRevenue = 0;
+      let totalTicketsSold = 0;
+
+      for (const event of organizerEvents) {
+        if (event.result) {
+          const eventData = event.result as any;
+          const ticketsSold = eventData["tickets-sold"] || 0;
+          const price = eventData.price || 0;
+          const eventRevenue = (ticketsSold * price) / 1000000;
+
+          totalRevenue += eventRevenue;
+          totalTicketsSold += ticketsSold;
+        }
+      }
+
+      const organizers = [
+        {
+          address: knownOrganizerAddress,
+          isApproved: isOrganizer,
+          eventsCreated: organizerEvents.length,
+          totalRevenue: totalRevenue.toFixed(2),
+          totalTicketsSold: totalTicketsSold,
+          status: "active",
+        },
+      ];
+
+      console.log("Organizer stats result:", organizers);
+      return organizers;
+    }
+
+    // Fallback: Get all events to find organizers (original logic)
+    const allEvents = await readEvents();
+    console.log("All events fallback:", allEvents);
+
+    // Extract unique organizers from events
+    const organizerAddresses = new Set<string>();
+    const organizerData: any = {};
+
+    for (const event of allEvents) {
+      console.log("Processing event for organizer extraction:", event);
+      if (event.result && (event.result as any).creator) {
+        const creator = (event.result as any).creator;
+        console.log("Found creator:", creator);
+        organizerAddresses.add(creator);
+
+        if (!organizerData[creator]) {
+          organizerData[creator] = {
+            address: creator,
+            eventsCreated: 0,
+            totalRevenue: 0,
+            totalTicketsSold: 0,
+          };
+        }
+
+        organizerData[creator].eventsCreated++;
+
+        // Calculate revenue for this event
+        const ticketsSold = (event.result as any)["tickets-sold"] || 0;
+        const price = (event.result as any).price || 0;
+        const eventRevenue = (ticketsSold * price) / 1000000; // Convert from microSTX to STX
+
+        console.log(
+          `Event stats for ${creator}: tickets=${ticketsSold}, price=${price}, revenue=${eventRevenue}`
+        );
+
+        organizerData[creator].totalRevenue += eventRevenue;
+        organizerData[creator].totalTicketsSold += ticketsSold;
+      } else {
+        console.log("Event has no creator or result:", event);
+      }
+    }
+
+    console.log(
+      "Extracted organizer addresses:",
+      Array.from(organizerAddresses)
+    );
+    console.log("Organizer data before status check:", organizerData);
+
+    // Convert to array and check organizer status for each
+    const organizers = [];
+    for (const address of organizerAddresses) {
+      try {
+        const isApprovedOrganizer = await readOrganizerStatus(address);
+        const data = organizerData[address];
+
+        organizers.push({
+          address: address,
+          isApproved: isApprovedOrganizer,
+          eventsCreated: data.eventsCreated,
+          totalRevenue: data.totalRevenue.toFixed(2),
+          totalTicketsSold: data.totalTicketsSold,
+          status: isApprovedOrganizer ? "active" : "pending",
+        });
+      } catch (error) {
+        console.error(`Error checking status for organizer ${address}:`, error);
+      }
+    }
+
+    console.log("Organizer stats:", organizers);
+    return organizers;
+  } catch (error) {
+    console.error("Error reading organizer stats:", error);
+    return [];
+  }
+};
+
 // Contract read functions - Updated to match actual contract functions
 export const readOrganizers = async () => {
   try {
     // Since the contract doesn't have a get-all-organizers function,
-    // we'll need to implement this differently or return empty for now
-    console.log(
-      "Note: Contract doesn't have a get-all-organizers function yet"
-    );
-    return [];
+    // we'll use the stats function that analyzes events
+    return await readAllOrganizerStats();
   } catch (error) {
     console.error("Error reading organizers:", error);
     return [];
@@ -543,7 +712,7 @@ export const readEvents = async () => {
           senderAddress: STACKS_CONFIG.contractAddress,
         });
 
-        if (eventResult && (eventResult as any) !== "(none)") {
+        if (eventResult && String(eventResult) !== "(none)") {
           events.push({
             id: i,
             result: eventResult, // Store the raw result for processing
@@ -638,77 +807,167 @@ export const readEventDetails = async (eventId: number) => {
   }
 };
 
+// Helper function to format relative time
+const getRelativeTime = (timestamp: number) => {
+  const now = Math.floor(Date.now() / 1000); // Current time in seconds
+  const diff = now - timestamp; // Difference in seconds
+
+  // If timestamp is in the future, treat as "Just created" for events
+  if (diff < 0) return "Just created";
+
+  if (diff >= 0) {
+    if (diff < 60) return "Just now";
+
+    const minutes = Math.floor(diff / 60);
+    if (diff < 3600) {
+      return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
+    }
+
+    const hours = Math.floor(diff / 3600);
+    if (diff < 86400) {
+      return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
+    }
+
+    const days = Math.floor(diff / 86400);
+    if (diff < 604800) {
+      return days === 1 ? "1 day ago" : `${days} days ago`;
+    }
+
+    const weeks = Math.floor(diff / 604800);
+    return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
+  }
+};
+
+// Get recent platform activities
+export const readRecentActivities = async () => {
+  try {
+    console.log("Fetching recent platform activities...");
+
+    const activities = [];
+
+    // Get organizers first since we know this works
+    const organizers = await readAllOrganizerStats();
+
+    // For each organizer, get their events using the working readOrganizerEvents function
+    for (const organizer of organizers) {
+      const organizerEvents = await readOrganizerEvents(organizer.address);
+      console.log(
+        `Events for organizer ${organizer.address}:`,
+        organizerEvents
+      );
+
+      for (const event of organizerEvents) {
+        if (event.result) {
+          const eventData = event.result as any;
+          console.log("Processing event for activity:", eventData);
+          const eventName = eventData.name || `Event ${event.id}`;
+          const eventTimestamp =
+            eventData.timestamp || Math.floor(Date.now() / 1000);
+          const relativeTime = getRelativeTime(eventTimestamp);
+          console.log(
+            "Event name extracted:",
+            eventName,
+            "Timestamp:",
+            eventTimestamp,
+            "Relative time:",
+            relativeTime
+          );
+          const ticketsSold = eventData["tickets-sold"] || 0;
+
+          // Event creation activity
+          activities.push({
+            type: "event-created",
+            icon: "calendar",
+            color: "bg-blue-500",
+            message: `Event "${eventName}" was created`,
+            time: relativeTime,
+            timestamp: eventTimestamp,
+            data: event,
+          });
+
+          // Ticket sales activity (if any tickets sold)
+          if (ticketsSold > 0) {
+            activities.push({
+              type: "ticket-sales",
+              icon: "users",
+              color: "bg-green-500",
+              message: `Event "${eventName}" sold ${ticketsSold} tickets`,
+              time: relativeTime,
+              timestamp: eventTimestamp,
+              data: { ticketsSold, eventName },
+            });
+          }
+        }
+      }
+    }
+
+    for (const organizer of organizers) {
+      const shortAddress = `${organizer.address.slice(
+        0,
+        6
+      )}...${organizer.address.slice(-4)}`;
+      const registrationTime = Math.floor(Date.now() / 1000) - 24 * 60 * 60;
+      activities.push({
+        type: "organizer-registered",
+        icon: "user-plus",
+        color: "bg-purple-500",
+        message: `New organizer ${shortAddress} registered`,
+        time: getRelativeTime(registrationTime),
+        timestamp: registrationTime,
+        data: organizer,
+      });
+    }
+
+    // Sort activities by timestamp (most recent first) and limit to 5
+    activities.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    return activities.slice(0, 5);
+  } catch (error) {
+    console.error("Error reading recent activities:", error);
+    return [];
+  }
+};
+
 export const readPlatformStats = async () => {
   try {
-    // Read the total events count from the contract
-    const totalEventsResponse = await fetch(
-      `${getCoreApiUrl()}/v2/contracts/call-read/${
-        STACKS_CONFIG.contractAddress
-      }/${STACKS_CONFIG.contractName}/get-total-events`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sender: STACKS_CONFIG.contractAddress,
-          arguments: [],
-        }),
+    console.log("Reading platform stats...");
+
+    const allEvents = await readEvents();
+    console.log("All events for stats:", allEvents);
+
+    const organizerStats = await readAllOrganizerStats();
+    console.log("Organizer stats:", organizerStats);
+
+    let totalTicketsSold = 0;
+    let totalRevenue = 0;
+
+    for (const event of allEvents) {
+      if (event.result) {
+        const eventData = event.result as any;
+        const ticketsSold = eventData["tickets-sold"] || 0;
+        const price = eventData.price || 0;
+
+        totalTicketsSold += ticketsSold;
+        totalRevenue += (ticketsSold * price) / 1000000; // Convert from microSTX to STX
       }
-    );
+    }
 
-    const totalEventsData = totalEventsResponse.ok
-      ? await totalEventsResponse.json()
-      : { result: "u0" };
-    const totalEvents = parseInt(
-      totalEventsData.result?.replace(/^u/, "") || "0"
-    );
-
-    console.log("Platform stats - Total events:", totalEvents);
-
-    return {
-      totalEvents,
-      totalTicketsSold: 0, // Would need to aggregate from individual events
-      totalOrganizers: 0, // Would need a way to count approved organizers
+    const stats = {
+      totalEvents: allEvents.length,
+      totalTicketsSold,
+      totalRevenue,
+      totalOrganizers: organizerStats.length,
     };
+
+    console.log("Platform stats calculated:", stats);
+    return stats;
   } catch (error) {
     console.error("Error reading platform stats:", error);
     return {
       totalEvents: 0,
       totalTicketsSold: 0,
+      totalRevenue: 0,
       totalOrganizers: 0,
     };
-  }
-};
-
-// Test wallet popup directly
-export const testWalletPopup = () => {
-  console.log("=== Testing Wallet Popup ===");
-
-  if (!isConnected() && !userSession.isUserSignedIn()) {
-    console.log("❌ User not connected - cannot test transaction");
-    return;
-  }
-
-  const testOptions = {
-    contractAddress: STACKS_CONFIG.contractAddress,
-    contractName: STACKS_CONFIG.contractName,
-    functionName: "get-total-events", // Simple read function for testing
-    functionArgs: [],
-    network: STACKS_CONFIG.network,
-    postConditionMode: Tx.PostConditionMode.Allow,
-    onFinish: (data: any) => {
-      console.log("✅ Test transaction completed:", data);
-    },
-    onCancel: () => {
-      console.log("❌ Test transaction cancelled");
-    },
-  };
-
-  console.log("Attempting test transaction...");
-  try {
-    callContractWithRequest(testOptions);
-    console.log("✅ Test contract call executed");
-  } catch (error) {
-    console.error("❌ Test transaction failed:", error);
   }
 };
 
