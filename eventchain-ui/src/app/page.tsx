@@ -22,60 +22,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { WalletConnect } from "@/components/wallet-connect";
-
-const mockEvents = [
-  {
-    id: 1,
-    title: "Web3 Developer Conference 2024",
-    description: "Join the biggest Web3 developer conference of the year",
-    date: "2024-03-15",
-    time: "09:00 AM",
-    location: "San Francisco, CA",
-    price: "500000", // Price in microSTX (0.5 STX)
-    priceDisplay: "0.5 STX",
-    category: "Technology",
-    attendees: 500,
-    image: "/placeholder.svg?height=200&width=300",
-    organizer: "TechDAO",
-  },
-  {
-    id: 2,
-    title: "NFT Art Exhibition",
-    description: "Discover the latest in digital art and NFT collections",
-    date: "2024-03-20",
-    time: "02:00 PM",
-    location: "New York, NY",
-    price: "200000", // Price in microSTX (0.2 STX)
-    priceDisplay: "0.2 STX",
-    category: "Art",
-    attendees: 200,
-    image: "/placeholder.svg?height=200&width=300",
-    organizer: "ArtCollective",
-  },
-  {
-    id: 3,
-    title: "DeFi Summit 2024",
-    description: "Explore the future of decentralized finance",
-    date: "2024-03-25",
-    time: "10:00 AM",
-    location: "London, UK",
-    price: "800000", // Price in microSTX (0.8 STX)
-    priceDisplay: "0.8 STX",
-    category: "Finance",
-    attendees: 800,
-    image: "/placeholder.svg?height=200&width=300",
-    organizer: "DeFiDAO",
-  },
-];
+import { useEvents } from "@/hooks/useEvents";
 
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const { events, isLoading, error } = useEvents();
 
-  const filteredEvents = mockEvents.filter((event) => {
+  const filteredEvents = events.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchTerm.toLowerCase());
+      (event.description && event.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory =
       selectedCategory === "all" ||
       event.category.toLowerCase() === selectedCategory;
@@ -174,8 +131,41 @@ export default function HomePage() {
       <section className="py-12">
         <div className="container mx-auto px-4">
           <h3 className="text-2xl font-bold mb-8">Upcoming Events</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEvents.map((event) => (
+          
+          {/* Loading State */}
+          {isLoading && (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <p className="text-muted-foreground mt-4">Loading events from blockchain...</p>
+            </div>
+          )}
+          
+          {/* Error State */}
+          {error && !isLoading && (
+            <div className="text-center py-12">
+              <p className="text-red-500 mb-4">Failed to load events: {error}</p>
+              <Button onClick={() => window.location.reload()}>Retry</Button>
+            </div>
+          )}
+          
+          {/* No Events State */}
+          {!isLoading && !error && filteredEvents.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">
+                {events.length === 0 ? "No events found on the blockchain." : "No events match your search criteria."}
+              </p>
+              {events.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Events will appear here once they are created by organizers.
+                </p>
+              )}
+            </div>
+          )}
+          
+          {/* Events Grid */}
+          {!isLoading && !error && filteredEvents.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredEvents.map((event) => (
               <Card
                 key={event.id}
                 className="overflow-hidden hover:shadow-lg transition-shadow"
@@ -226,8 +216,9 @@ export default function HomePage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>
