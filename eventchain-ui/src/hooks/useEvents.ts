@@ -93,21 +93,40 @@ export const useEvents = () => {
     const date = eventDate.toISOString().split('T')[0];
     const time = eventDate.toTimeString().split(' ')[0].substring(0, 5);
     
-    // Determine category based on event name/title
-    let category = "Technology"; // Default category
-    const titleLower = title.toLowerCase();
-    if (titleLower.includes("art") || titleLower.includes("nft")) {
-      category = "Art";
-    } else if (titleLower.includes("defi") || titleLower.includes("finance")) {
-      category = "Finance";
-    } else if (titleLower.includes("music") || titleLower.includes("concert")) {
-      category = "Music";
+    // Load stored metadata
+    const eventKey = `${title}-${location}-${timestamp}`;
+    const metadataKey = `event-metadata-${eventKey}`;
+    const eventMetadata = typeof window !== 'undefined' ? 
+      JSON.parse(localStorage.getItem(metadataKey) || '{}') : {};
+    
+    const localStorageKey = `event-${blockchainEvent.id || 0}`;
+    const localData = typeof window !== 'undefined' ? 
+      JSON.parse(localStorage.getItem(localStorageKey) || '{}') : {};
+
+    // Use stored description if available, otherwise generate default
+    const description = eventMetadata.description || localData.description || 
+      `Join us for ${title}. This event is created on the Stacks blockchain with transparent and secure ticketing.`;
+    
+    // Determine category based on stored data or event name/title
+    let category = eventMetadata.category || localData.category || "Technology"; // Default category
+    if (!eventMetadata.category && !localData.category) {
+      const titleLower = title.toLowerCase();
+      if (titleLower.includes("art") || titleLower.includes("nft")) {
+        category = "Art";
+      } else if (titleLower.includes("defi") || titleLower.includes("finance")) {
+        category = "Finance";
+      } else if (titleLower.includes("music") || titleLower.includes("concert")) {
+        category = "Music";
+      }
     }
+    
+    // Use stored image if available
+    const storedImage = eventMetadata.image || localData.image || "/placeholder.svg?height=200&width=300";
     
     return {
       id: blockchainEvent.id || 0,
       title,
-      description: `Join us for ${title}. This event is created on the Stacks blockchain with transparent and secure ticketing.`,
+      description,
       date,
       time,
       location,
@@ -115,7 +134,7 @@ export const useEvents = () => {
       priceDisplay: `${priceInSTX.toFixed(2)} STX`,
       category,
       attendees: totalTickets,
-      image: "/placeholder.svg?height=200&width=300",
+      image: storedImage,
       organizer: creator.length > 20 ? `${creator.slice(0, 6)}...${creator.slice(-4)}` : creator,
       creator,
       timestamp,
