@@ -169,9 +169,37 @@ export const buyTicket = async (
   price: number,
   creatorAddress: string
 ) => {
+  console.log("=== Buy Ticket Debug ===");
+  console.log("Event ID:", eventId);
+  console.log("Price (microSTX):", price);
+  console.log("Creator Address:", creatorAddress);
+
+  // Check if user is connected
+  if (!isConnected() && !userSession.isUserSignedIn()) {
+    throw new Error("User is not connected. Please connect your wallet first.");
+  }
+
+  let userAddress = null;
+  if (isConnected()) {
+    const data = getLocalStorage();
+    if (data?.addresses?.stx && data.addresses.stx.length > 0) {
+      userAddress = data.addresses.stx[0].address;
+    }
+  } else if (userSession.isUserSignedIn()) {
+    const userData = userSession.loadUserData();
+    userAddress = userData.profile.stxAddress.testnet;
+  }
+
+  console.log("User address:", userAddress);
+
+  if (!userAddress) {
+    throw new Error("Unable to get user address");
+  }
+
   const functionArgs = [Tx.uintCV(eventId)];
 
-  // Simplified without post conditions for now
+  // Use Allow mode to let the smart contract handle STX transfers internally
+  // This avoids post-condition issues with different Stacks.js versions
   const options = {
     contractAddress: STACKS_CONFIG.contractAddress,
     contractName: STACKS_CONFIG.contractName,
@@ -180,11 +208,48 @@ export const buyTicket = async (
     network: STACKS_CONFIG.network,
     postConditionMode: Tx.PostConditionMode.Allow,
     onFinish: (data: any) => {
-      console.log("Ticket purchased:", data);
+      console.log("✅ Ticket purchased successfully:", data);
+      console.log("Transaction ID:", data.txId);
+      alert(`Ticket purchase successful! Transaction ID: ${data.txId}`);
+      // Refresh the page to show the new ticket
+      if (typeof window !== 'undefined') {
+        setTimeout(() => window.location.reload(), 2000);
+      }
+    },
+    onCancel: () => {
+      console.log("❌ Purchase cancelled by user");
+      throw new Error("Transaction cancelled by user");
     },
   };
 
-  await callContractWithRequest(options);
+  try {
+    console.log("🔄 Using direct request method to avoid post-condition issues");
+    
+    // Use direct request method which should bypass automatic post-conditions
+    const response = await request("stx_callContract", {
+      contract: `${STACKS_CONFIG.contractAddress}.${STACKS_CONFIG.contractName}` as `${string}.${string}`,
+      functionName: "buy-ticket",
+      functionArgs: functionArgs,
+      network: STACKS_CONFIG.network?.chainId === 2147483648 ? "testnet" : "mainnet",
+      postConditionMode: "allow", // Explicitly set to allow mode
+    });
+
+    console.log("✅ Buy ticket transaction submitted:", response);
+    alert(`Ticket purchase initiated! Transaction ID: ${response}`);
+    
+    // Refresh the page to show the new ticket
+    if (typeof window !== 'undefined') {
+      setTimeout(() => window.location.reload(), 2000);
+    }
+    
+    return response;
+  } catch (error) {
+    console.error("❌ Direct request method failed, trying fallback:", error);
+    
+    // Fallback to the wrapper function
+    console.log("Calling buy-ticket with options:", options);
+    await callContractWithRequest(options);
+  }
 };
 
 export const transferTicket = async (eventId: number, toAddress: string) => {
@@ -1017,6 +1082,121 @@ export const testContractConnection = async () => {
 };
 
 // Enhanced addOrganizer with better error handling
+// Get tickets owned by a specific user
+export const readUserTickets = async (userAddress: string) => {
+  try {
+    console.log("Fetching tickets for user:", userAddress);
+
+    // Get all events first
+    const allEvents = await readEvents();
+    console.log("All events for user ticket check:", allEvents);
+
+    const userTickets = [];
+
+    // For each event, check if the user owns a ticket by calling get-ticket
+    for (const event of allEvents) {
+      if (event.result) {
+        try {
+          // Try to get the user's ticket for this event using get-ticket function
+          const ticketResult = await Tx.fetchCallReadOnlyFunction({
+            contractAddress: STACKS_CONFIG.contractAddress,
+            contractName: STACKS_CONFIG.contractName,
+            functionName: "get-ticket",
+            functionArgs: [Tx.uintCV(event.id), Tx.principalCV(userAddress)],
+            network: STACKS_CONFIG.network,
+            senderAddress: userAddress,
+          });
+
+          console.log(`Ticket result for user ${userAddress} and event ${event.id}:`, ticketResult);
+
+          // Check if ticket exists (not none)
+          let hasTicket = false;
+          let isCheckedIn = false;
+
+          if (ticketResult && ticketResult !== "(none)") {
+            // Parse the ticket data
+            if (typeof ticketResult === "object") {
+              const resultAny = ticketResult as any;
+              
+              // Handle optional type response
+              if (resultAny.type === "some" && resultAny.value) {
+                hasTicket = true;
+                const ticketData = resultAny.value;
+                
+                // Check if the ticket has been used (checked in)
+                if (ticketData && ticketData.type === "tuple" && ticketData.value) {
+                  const tupleData = ticketData.value;
+                  if (tupleData.used && tupleData.used.type === "bool") {
+                    isCheckedIn = tupleData.used.value === true;
+                  }
+                }
+              } else if (resultAny.type !== "none") {
+                hasTicket = true;
+                // Try to extract used status from direct tuple
+                if (resultAny.used && resultAny.used.type === "bool") {
+                  isCheckedIn = resultAny.used.value === true;
+                }
+              }
+            }
+          }
+
+          if (hasTicket) {
+            console.log(`User has ticket for event ${event.id}, checked in: ${isCheckedIn}`);
+            userTickets.push({
+              ...event,
+              isCheckedIn,
+              status: isCheckedIn ? "used" : "active"
+            });
+          }
+        } catch (error) {
+          console.error(`Error checking ticket for event ${event.id}:`, error);
+          // Continue to next event instead of breaking
+        }
+      }
+    }
+
+    console.log("User tickets:", userTickets);
+    return userTickets;
+  } catch (error) {
+    console.error("Error reading user tickets:", error);
+    return [];
+  }
+};
+
+// Get transfer history for a user
+export const readUserTransferHistory = async (userAddress: string) => {
+  try {
+    console.log("Fetching transfer history for user:", userAddress);
+    
+    // This is a simplified version - in a real implementation, you'd want to
+    // query blockchain events or maintain a transfer history in the contract
+    const userTickets = await readUserTickets(userAddress);
+    
+    const history = userTickets.map((ticket) => {
+      const eventData = ticket.result as any;
+      const eventName = eventData.name || `Event ${ticket.id}`;
+      const timestamp = eventData.timestamp || Math.floor(Date.now() / 1000);
+      const date = new Date(timestamp * 1000).toISOString().split('T')[0];
+      
+      return {
+        id: ticket.id,
+        eventTitle: eventName,
+        action: "Purchased", // Could be "Purchased", "Transferred", "Received"
+        from: "Contract",
+        to: userAddress,
+        date,
+        txHash: `0x${ticket.id.toString(16).padStart(64, '0')}`, // Simplified hash
+      };
+    });
+
+    console.log("User transfer history:", history);
+    return history;
+  } catch (error) {
+    console.error("Error reading user transfer history:", error);
+    return [];
+  }
+};
+
 export const addOrganizerDebug = async (organizerAddress: string) => {
   console.log("=== Add Organizer Debug ===");
 
