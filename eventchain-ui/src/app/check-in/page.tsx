@@ -160,36 +160,12 @@ export default function CheckInPage() {
       // 1. User is the event creator (can check in anyone)
       // 2. User has a ticket AND creator is checking them in
 
-      // Let's verify step by step what the contract will check:
-
-      // Step 1: Does the event exist? (we know it does since we have eventData)
-      console.log("✅ Event exists");
-
-      // Step 2: Is the caller (tx-sender) the event creator?
       const isCreator = eventData.creator === address;
       console.log("Is caller the event creator?", isCreator);
 
       if (isCreator) {
-        console.log("✅ User is event creator - they can check themselves in");
-
-        // Step 3: Does the target user (in this case, same as caller) have a ticket?
-        console.log("Checking if creator has a ticket for their own event...");
-        const userTickets = await getUserTickets(address);
-        console.log("Creator's tickets:", userTickets);
-
-        const hasTicketForEvent = userTickets.some(
-          (ticket) => ticket.id === selectedEvent
-        );
-        console.log("Creator has ticket for this event:", hasTicketForEvent);
-
-        if (!hasTicketForEvent) {
-          setError(
-            `Even as the event creator, you need a ticket to check in. Please purchase a ticket for "${eventData.name}" first.`
-          );
-          return;
-        }
-
-        console.log("✅ Creator has ticket - proceeding with check-in");
+        console.log("✅ User is event creator - they can check in attendees");
+        console.log("✅ Event creators don't need tickets to manage check-ins");
       } else {
         console.log("❌ User is not the event creator");
 
@@ -524,16 +500,6 @@ export default function CheckInPage() {
               </div>
 
               <div className="flex flex-col items-center space-y-4 pt-4">
-                <Alert className="mb-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Check-in Restriction:</strong> The smart contract
-                    currently only allows event creators to check people in. You
-                    can only check in if you created this event, or if the event
-                    creator checks you in manually.
-                  </AlertDescription>
-                </Alert>
-
                 <div className="text-center">
                   <h3 className="font-semibold text-lg mb-2">
                     Check In to This Event
@@ -557,15 +523,7 @@ export default function CheckInPage() {
                       )}
 
                       {selectedEventData?.creator === address ? (
-                        <div>
-                          <Badge className="bg-blue-500">
-                            <Users className="h-3 w-3 mr-1" />
-                            You are the event creator
-                          </Badge>
-                          <p className="text-sm text-muted-foreground mt-2">
-                            As the creator, you can check in any ticket holder
-                          </p>
-                        </div>
+                        <div></div>
                       ) : (
                         <div>
                           <Badge variant="outline">
@@ -588,13 +546,13 @@ export default function CheckInPage() {
                   disabled={
                     isCheckingIn ||
                     !selectedEvent ||
-                    (!userHasTicket &&
-                      selectedEventData?.creator !== address) ||
+                    (selectedEventData?.creator !== address &&
+                      !userHasTicket) ||
                     isLoadingTickets
                   }
                   className="min-w-[200px]"
                   variant={
-                    userHasTicket && selectedEventData?.creator === address
+                    selectedEventData?.creator === address || userHasTicket
                       ? "default"
                       : "secondary"
                   }
@@ -624,7 +582,7 @@ export default function CheckInPage() {
 
                 <p className="text-xs text-muted-foreground text-center max-w-md">
                   {selectedEventData?.creator === address
-                    ? "As the event creator, you can check in ticket holders via blockchain transaction"
+                    ? "As the event creator, you can check in any attendee via blockchain transaction"
                     : userHasTicket
                     ? "You have a ticket but only the event creator can currently check you in due to smart contract limitations"
                     : "You need a ticket and creator permissions to check in"}
