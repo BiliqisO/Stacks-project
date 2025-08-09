@@ -6,7 +6,7 @@ export const CONTRACT_ADDRESS =
   "ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9";
 
 export const CONTRACT_NAME =
-  process.env.NEXT_PUBLIC_CONTRACT_NAME || "eventchain-v3";
+  process.env.NEXT_PUBLIC_CONTRACT_NAME || "eventchain-v4";
 
 // Ensure network has coreApiUrl property
 const networkInstance = NETWORK;
@@ -26,3 +26,8 @@ export const STACKS_CONFIG = {
 };
 
 console.log("STACKS_CONFIG:", STACKS_CONFIG);
+console.log("Environment variables:", {
+  NEXT_PUBLIC_CONTRACT_ADDRESS: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS,
+  NEXT_PUBLIC_CONTRACT_NAME: process.env.NEXT_PUBLIC_CONTRACT_NAME,
+  NEXT_PUBLIC_STACKS_NETWORK: process.env.NEXT_PUBLIC_STACKS_NETWORK
+});

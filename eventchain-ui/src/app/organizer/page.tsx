@@ -267,6 +267,20 @@ export default function OrganizerPage() {
         Number.parseInt(newEvent.maxTickets)
       );
 
+      // Store event description and other metadata locally
+      // We need to determine the event ID that will be created
+      // For now, we'll store based on a combination of title, location, and timestamp
+      const eventKey = `${newEvent.title}-${newEvent.location}-${timestamp}`;
+      const eventMetadata = {
+        description: newEvent.description,
+        category: newEvent.category,
+        image: imagePreview,
+      };
+      
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`event-metadata-${eventKey}`, JSON.stringify(eventMetadata));
+      }
+
       // Refresh events from blockchain after successful creation
       setTimeout(() => {
         fetchEvents(); // Refresh the events list from blockchain

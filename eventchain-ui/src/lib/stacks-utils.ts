@@ -19,8 +19,11 @@ const getCoreApiUrl = () => {
 
 async function callContractWithRequest(options: any) {
   try {
-    console.log("functionName", options.functionName);
-    console.log("functionArgs", options.functionArgs);
+    console.log("=== Contract Call Debug ===");
+    console.log("functionName:", options.functionName);
+    console.log("functionArgs:", options.functionArgs);
+    console.log("Contract:", `${options.contractAddress}.${options.contractName}`);
+    console.log("Network:", options.network?.chainId === 2147483648 ? "testnet" : "mainnet");
 
     const response = await request("stx_callContract", {
       contract:
@@ -30,11 +33,15 @@ async function callContractWithRequest(options: any) {
       network: options.network?.chainId === 2147483648 ? "testnet" : "mainnet",
     });
 
-    console.log("Transaction ID:", response);
+    console.log("✅ Transaction submitted successfully:", response);
     if (options.onFinish) options.onFinish(response);
     return response;
   } catch (error) {
-    console.error("Contract call failed:", error);
+    console.error("❌ Contract call failed:", error);
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     if (options.onCancel) options.onCancel();
     throw error;
   }
@@ -164,6 +171,50 @@ export const createEvent = async (
   }
 };
 
+// NEW: Get ticket info by ticket ID
+export const getTicketInfo = async (ticketId: number) => {
+  try {
+    console.log("Getting ticket info for ID:", ticketId);
+    
+    const result = await Tx.fetchCallReadOnlyFunction({
+      contractAddress: STACKS_CONFIG.contractAddress,
+      contractName: STACKS_CONFIG.contractName,
+      functionName: "get-ticket-info",
+      functionArgs: [Tx.uintCV(ticketId)],
+      network: STACKS_CONFIG.network,
+      senderAddress: STACKS_CONFIG.contractAddress,
+    });
+    
+    console.log("Ticket info result:", result);
+    return result;
+  } catch (error) {
+    console.error("Error getting ticket info:", error);
+    return null;
+  }
+};
+
+// NEW: Check if ticket ID is valid
+export const isTicketValid = async (ticketId: number) => {
+  try {
+    console.log("Checking if ticket ID is valid:", ticketId);
+    
+    const result = await Tx.fetchCallReadOnlyFunction({
+      contractAddress: STACKS_CONFIG.contractAddress,
+      contractName: STACKS_CONFIG.contractName,
+      functionName: "is-ticket-valid",
+      functionArgs: [Tx.uintCV(ticketId)],
+      network: STACKS_CONFIG.network,
+      senderAddress: STACKS_CONFIG.contractAddress,
+    });
+    
+    console.log("Ticket validity result:", result);
+    return result;
+  } catch (error) {
+    console.error("Error checking ticket validity:", error);
+    return false;
+  }
+};
+
 export const buyTicket = async (
   eventId: number,
   price: number,
@@ -235,7 +286,7 @@ export const buyTicket = async (
     });
 
     console.log("✅ Buy ticket transaction submitted:", response);
-    alert(`Ticket purchase initiated! Transaction ID: ${response}`);
+    alert(`Ticket purchase initiated! Transaction ID: ${response}\n\nNote: In the improved contract, this will return your Ticket ID for easy check-in.`);
     
     // Refresh the page to show the new ticket
     if (typeof window !== 'undefined') {
@@ -270,8 +321,93 @@ export const transferTicket = async (eventId: number, toAddress: string) => {
   await callContractWithRequest(options);
 };
 
+// NEW: Check-in by Ticket ID (for practical event management)
+export const checkInByTicketId = async (ticketId: number) => {
+  console.log("=== Check-in by Ticket ID ===");
+  console.log("Ticket ID:", ticketId);
+  console.log("Contract Address:", STACKS_CONFIG.contractAddress);
+  console.log("Contract Name:", STACKS_CONFIG.contractName);
+  
+  // First, let's verify the ticket exists and get its details
+  try {
+    console.log("Checking if ticket ID exists...");
+    const ticketInfoResult = await Tx.fetchCallReadOnlyFunction({
+      contractAddress: STACKS_CONFIG.contractAddress,
+      contractName: STACKS_CONFIG.contractName,
+      functionName: "get-ticket-info",
+      functionArgs: [Tx.uintCV(ticketId)],
+      network: STACKS_CONFIG.network,
+      senderAddress: STACKS_CONFIG.contractAddress,
+    });
+    console.log("Ticket info:", ticketInfoResult);
+    
+  } catch (debugError) {
+    console.error("Debug error:", debugError);
+  }
+  
+  const functionArgs = [Tx.uintCV(ticketId)];
+  console.log("Function Args:", functionArgs);
+
+  const options = {
+    contractAddress: STACKS_CONFIG.contractAddress,
+    contractName: STACKS_CONFIG.contractName,
+    functionName: "check-in-by-ticket-id",
+    functionArgs,
+    network: STACKS_CONFIG.network,
+    postConditionMode: Tx.PostConditionMode.Allow,
+    onFinish: (data: any) => {
+      console.log("✅ Ticket checked in successfully by ID:", data);
+    },
+    onCancel: () => {
+      console.log("❌ Check-in cancelled by user");
+      throw new Error("Check-in cancelled by user");
+    },
+  };
+  
+  console.log("About to call contract with options:", options);
+
+  await callContractWithRequest(options);
+};
+
+// EXISTING: Check-in by Address (kept for backward compatibility)
 export const checkInTicket = async (eventId: number, userAddress: string) => {
+  console.log("=== Check-in Ticket Debug ===");
+  console.log("Event ID:", eventId);
+  console.log("User Address:", userAddress);
+  console.log("Contract Address:", STACKS_CONFIG.contractAddress);
+  console.log("Contract Name:", STACKS_CONFIG.contractName);
+  
+  // First, let's verify the event exists and get its details
+  try {
+    console.log("Checking if event exists...");
+    const eventResult = await Tx.fetchCallReadOnlyFunction({
+      contractAddress: STACKS_CONFIG.contractAddress,
+      contractName: STACKS_CONFIG.contractName,
+      functionName: "get-event",
+      functionArgs: [Tx.uintCV(eventId)],
+      network: STACKS_CONFIG.network,
+      senderAddress: userAddress,
+    });
+    console.log("Event data:", eventResult);
+    
+    // Check if user has a ticket
+    console.log("Checking if user has ticket...");
+    const ticketResult = await Tx.fetchCallReadOnlyFunction({
+      contractAddress: STACKS_CONFIG.contractAddress,
+      contractName: STACKS_CONFIG.contractName,
+      functionName: "get-ticket",
+      functionArgs: [Tx.uintCV(eventId), Tx.principalCV(userAddress)],
+      network: STACKS_CONFIG.network,
+      senderAddress: userAddress,
+    });
+    console.log("Ticket data:", ticketResult);
+    
+  } catch (debugError) {
+    console.error("Debug error:", debugError);
+  }
+  
   const functionArgs = [Tx.uintCV(eventId), Tx.principalCV(userAddress)];
+  console.log("Function Args:", functionArgs);
 
   const options = {
     contractAddress: STACKS_CONFIG.contractAddress,
@@ -281,9 +417,15 @@ export const checkInTicket = async (eventId: number, userAddress: string) => {
     network: STACKS_CONFIG.network,
     postConditionMode: Tx.PostConditionMode.Allow,
     onFinish: (data: any) => {
-      console.log("Ticket checked in:", data);
+      console.log("✅ Ticket checked in successfully:", data);
+    },
+    onCancel: () => {
+      console.log("❌ Check-in cancelled by user");
+      throw new Error("Check-in cancelled by user");
     },
   };
+  
+  console.log("About to call contract with options:", options);
 
   await callContractWithRequest(options);
 };
