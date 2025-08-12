@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { WalletConnect } from "@/components/wallet-connect";
 import { useEvents } from "@/hooks/useEvents";
 
 export default function HomePage() {
@@ -40,50 +39,7 @@ export default function HomePage() {
   });
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-primary">EventChain</h1>
-              <nav className="hidden md:flex space-x-6">
-                <Link
-                  href="/"
-                  className="text-primary font-medium"
-                >
-                  Home
-                </Link>
-                <Link
-                  href="/organizer"
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  Organizer
-                </Link>
-                <Link
-                  href="/tickets"
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  My Tickets
-                </Link>
-                <Link
-                  href="/check-in"
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  Check-in
-                </Link>
-                <Link
-                  href="/admin"
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  Admin
-                </Link>
-              </nav>
-            </div>
-            <WalletConnect />
-          </div>
-        </div>
-      </header>
+    <div className="space-y-8">
 
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary/10 to-secondary/10 py-16">
