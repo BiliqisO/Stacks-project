@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, MapPin, Users, DollarSign } from "lucide-react";
+import { Calendar, MapPin, Users, DollarSign, Upload, X } from "lucide-react";
 import { createEvent } from "@/lib/stacks-utils";
 import { useStacks } from "@/hooks/useStacks";
 import { useRouter } from "next/navigation";
@@ -21,10 +21,43 @@ export default function CreateEventPage() {
     price: "",
     maxTickets: "",
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingToIPFS, setUploadingToIPFS] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { isSignedIn } = useStacks();
   const router = useRouter();
+
+  // Upload image to IPFS
+  const uploadToIPFS = async (file: File): Promise<string> => {
+    // Using a public IPFS gateway for this example
+    // In production, you might want to use your own IPFS node or a service like Pinata
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      // Using a public IPFS API (you can replace this with Pinata, Infura, or your own IPFS node)
+      const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+        method: 'POST',
+        headers: {
+          'pinata_api_key': process.env.NEXT_PUBLIC_PINATA_API_KEY || '',
+          'pinata_secret_api_key': process.env.NEXT_PUBLIC_PINATA_SECRET_KEY || '',
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload to IPFS');
+      }
+
+      const result = await response.json();
+      return result.IpfsHash; // Returns the IPFS hash
+    } catch (error) {
+      console.error('IPFS upload error:', error);
+      throw new Error('Failed to upload image to IPFS');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +70,23 @@ export default function CreateEventPage() {
     try {
       setIsCreating(true);
       setError(null);
+
+      let imageHash = "";
+      
+      // Upload image to IPFS if selected
+      if (selectedImage) {
+        setUploadingToIPFS(true);
+        try {
+          imageHash = await uploadToIPFS(selectedImage);
+          console.log("Image uploaded to IPFS:", imageHash);
+        } catch (uploadError) {
+          console.error("Image upload failed:", uploadError);
+          // Continue without image rather than failing the entire event creation
+          setError("Image upload failed, creating event without image");
+        } finally {
+          setUploadingToIPFS(false);
+        }
+      }
 
       // Combine date and time
       const eventDateTime = new Date(`${formData.date}T${formData.time}`);
@@ -53,6 +103,20 @@ export default function CreateEventPage() {
         parseInt(formData.maxTickets)
       );
 
+      // Store additional metadata (including IPFS hash) in localStorage
+      // In a real application, you might want to store this in a separate contract or database
+      if (imageHash || formData.description) {
+        const eventMetadata = {
+          title: formData.title,
+          description: formData.description,
+          imageHash: imageHash,
+          createdAt: new Date().toISOString(),
+        };
+        
+        const eventKey = `event-metadata-${formData.title}-${timestamp}`;
+        localStorage.setItem(eventKey, JSON.stringify(eventMetadata));
+      }
+
       // Redirect to events page on success
       router.push("/organizer/events");
     } catch (err) {
@@ -60,11 +124,44 @@ export default function CreateEventPage() {
       setError(err instanceof Error ? err.message : "Failed to create event");
     } finally {
       setIsCreating(false);
+      setUploadingToIPFS(false);
     }
   };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image must be smaller than 5MB');
+        return;
+      }
+
+      setSelectedImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      setError(null);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   if (!isSignedIn) {
@@ -122,6 +219,59 @@ export default function CreateEventPage() {
                 placeholder="Describe your event..."
                 rows={4}
               />
+            </div>
+
+            {/* Event Image */}
+            <div className="space-y-2">
+              <Label htmlFor="image">Event Image</Label>
+              <div className="space-y-4">
+                {!imagePreview ? (
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                    <div className="text-center">
+                      <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <div className="space-y-2">
+                        <Label htmlFor="image-upload" className="cursor-pointer">
+                          <span className="text-sm font-medium text-primary hover:text-primary/80">
+                            Click to upload an image
+                          </span>
+                          <Input
+                            id="image-upload"
+                            type="file"
+                            accept="image/*"
+                            className="sr-only"
+                            onChange={handleImageSelect}
+                          />
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          PNG, JPG, GIF up to 5MB. Image will be stored on IPFS.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Event preview"
+                      className="w-full h-48 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2"
+                      onClick={removeImage}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    {uploadingToIPFS && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+                        <div className="text-white text-sm">Uploading to IPFS...</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Location */}
@@ -222,10 +372,14 @@ export default function CreateEventPage() {
               </Button>
               <Button
                 type="submit"
-                disabled={isCreating}
+                disabled={isCreating || uploadingToIPFS}
                 className="flex-1"
               >
-                {isCreating ? "Creating..." : "Create Event"}
+                {uploadingToIPFS 
+                  ? "Uploading Image..." 
+                  : isCreating 
+                  ? "Creating Event..." 
+                  : "Create Event"}
               </Button>
             </div>
           </form>
