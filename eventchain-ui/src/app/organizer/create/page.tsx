@@ -10,6 +10,7 @@ import { Calendar, MapPin, Users, DollarSign, Upload, X } from "lucide-react";
 import { createEvent } from "@/lib/stacks-utils";
 import { useStacks } from "@/hooks/useStacks";
 import { useRouter } from "next/navigation";
+import { PinataSDK } from "pinata";
 
 export default function CreateEventPage() {
   const [formData, setFormData] = useState({
@@ -29,32 +30,21 @@ export default function CreateEventPage() {
   const { isSignedIn } = useStacks();
   const router = useRouter();
 
-  // Upload image to IPFS
+  // Upload image to IPFS using PinataSDK
   const uploadToIPFS = async (file: File): Promise<string> => {
-    // Using a public IPFS gateway for this example
-    // In production, you might want to use your own IPFS node or a service like Pinata
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      // Using a public IPFS API (you can replace this with Pinata, Infura, or your own IPFS node)
-      const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-        method: 'POST',
-        headers: {
-          'pinata_api_key': process.env.NEXT_PUBLIC_PINATA_API_KEY || '',
-          'pinata_secret_api_key': process.env.NEXT_PUBLIC_PINATA_SECRET_KEY || '',
-        },
-        body: formData,
+      // Initialize Pinata SDK - for client-side usage, we'll use JWT token
+      const pinata = new PinataSDK({
+        pinataJwt: process.env.NEXT_PUBLIC_PINATA_JWT!,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to upload to IPFS');
-      }
-
-      const result = await response.json();
-      return result.IpfsHash; // Returns the IPFS hash
+      // Upload file using the modern PinataSDK
+      const result = await pinata.upload.public.file(file);
+      console.log("✅ Uploaded successfully to IPFS with CID:", result.cid);
+      
+      return result.cid; // Returns the IPFS CID
     } catch (error) {
-      console.error('IPFS upload error:', error);
+      console.error('❌ IPFS upload error:', error);
       throw new Error('Failed to upload image to IPFS');
     }
   };
@@ -78,7 +68,9 @@ export default function CreateEventPage() {
         setUploadingToIPFS(true);
         try {
           imageHash = await uploadToIPFS(selectedImage);
+          const imageUrl = `https://gateway.pinata.cloud/ipfs/${imageHash}`;
           console.log("Image uploaded to IPFS:", imageHash);
+          console.log("Image accessible at:", imageUrl);
         } catch (uploadError) {
           console.error("Image upload failed:", uploadError);
           // Continue without image rather than failing the entire event creation

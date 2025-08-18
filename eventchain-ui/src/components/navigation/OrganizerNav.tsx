@@ -54,7 +54,7 @@ export function OrganizerNav() {
         {/* <h2 className="mb-2 px-2 text-lg font-semibold">
           Organizer Portal
         </h2> */}
-        <div className="space-y-1">
+        <div className="space-y-1"> 
           {organizerNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;

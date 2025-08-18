@@ -93,14 +93,23 @@ export const useEvents = () => {
     const date = eventDate.toISOString().split('T')[0];
     const time = eventDate.toTimeString().split(' ')[0].substring(0, 5);
     
-    // Load stored metadata
-    const eventKey = `${title}-${location}-${timestamp}`;
-    const metadataKey = `event-metadata-${eventKey}`;
-    const eventMetadata = typeof window !== 'undefined' ? 
-      JSON.parse(localStorage.getItem(metadataKey) || '{}') : {};
+    // Load stored metadata - try multiple key patterns to find the right one
+    const eventKey1 = `event-metadata-${title}-${timestamp}`;
+    const eventKey2 = `event-metadata-${title}-${location}-${timestamp}`;
+    let eventMetadata: any = {};
+    
+    if (typeof window !== 'undefined') {
+      // Try the primary key format first (matches create form)
+      eventMetadata = JSON.parse(localStorage.getItem(eventKey1) || '{}');
+      
+      // If not found, try the secondary key format
+      if (Object.keys(eventMetadata).length === 0) {
+        eventMetadata = JSON.parse(localStorage.getItem(eventKey2) || '{}');
+      }
+    }
     
     const localStorageKey = `event-${blockchainEvent.id || 0}`;
-    const localData = typeof window !== 'undefined' ? 
+    const localData: any = typeof window !== 'undefined' ? 
       JSON.parse(localStorage.getItem(localStorageKey) || '{}') : {};
 
     // Use stored description if available, otherwise generate default
@@ -120,8 +129,21 @@ export const useEvents = () => {
       }
     }
     
-    // Use stored image if available
-    const storedImage = eventMetadata.image || localData.image || "/placeholder.svg?height=200&width=300";
+    // Use stored image if available - construct IPFS URL from hash
+    let storedImage = "/placeholder.svg?height=200&width=300";
+    
+    const imageHash = eventMetadata.imageHash || localData.imageHash;
+    console.log("Event metadata for image:", { eventMetadata, localData, imageHash, eventKey1, eventKey2 });
+    
+    if (imageHash && imageHash !== "") {
+      // Construct IPFS gateway URL from the stored hash
+      storedImage = `https://gateway.pinata.cloud/ipfs/${imageHash}`;
+      console.log("Using IPFS image:", storedImage);
+    } else if (eventMetadata.image || localData.image) {
+      // Fallback to direct image URL if available
+      storedImage = eventMetadata.image || localData.image;
+      console.log("Using fallback image:", storedImage);
+    }
     
     return {
       id: blockchainEvent.id || 0,
