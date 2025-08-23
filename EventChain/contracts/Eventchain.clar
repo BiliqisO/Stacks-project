@@ -38,11 +38,8 @@
   (if (is-eq tx-sender (var-get admin))
       (begin
         (map-set organizers {organizer: who} {is-approved: true})
-        (ok true)
-      )
-      (err u401)
-  )
-)
+        (ok true))
+      (err u401)))
 ;; ---- Event Creation ----
 (define-public (create-event
     (name (string-utf8 100))
@@ -53,25 +50,19 @@
   )
   (if (is-some (map-get? organizers {organizer: tx-sender}))
       (let ((event-id (var-get next-event-id)))
-        (begin
-          (map-set events
-            (tuple (event-id event-id))
-            (tuple
-              (creator tx-sender)
-              (name name)
-              (location location)
-              (timestamp timestamp)
-              (price price)
-              (total-tickets total-tickets)
-              (tickets-sold u0)
-            )
-          )
-          (var-set next-event-id (+ event-id u1))
-          (ok event-id)
-        )
-      )
-      (err u402)
-  )
+        (map-set events
+          (tuple (event-id event-id))
+          (tuple
+            (creator tx-sender)
+            (name name)
+            (location location)
+            (timestamp timestamp)
+            (price price)
+            (total-tickets total-tickets)
+            (tickets-sold u0)))
+        (var-set next-event-id (+ event-id u1))
+        (ok event-id))
+      (err u402))
 )
 
 
@@ -92,28 +83,22 @@
             (err u101) ;; Already owns ticket
             (if (is-eq (stx-transfer? price tx-sender (get creator event-data)) (ok true))
                 (begin
-                    ;; Store ticket with original mapping
-                    (map-set tickets (tuple (event-id event-id) (owner tx-sender))
-                      (tuple (used false) (ticket-id new-ticket-id))
-                    )
-                    ;;Store reverse mapping for easy lookup
-                    (map-set ticket-owners (tuple (ticket-id new-ticket-id))
-                      (tuple 
-                        (owner tx-sender)
-                        (event-id event-id)
-                        (used false)
-                        (purchase-timestamp stacks-block-height)
-                      )
-                    )
-                    (var-set next-ticket-id (+ new-ticket-id u1))
-                    (map-set events (tuple (event-id event-id))
-                      (merge event-data (tuple (tickets-sold (+ sold u1))))
-                    )
-                    ;;  Return the ticket ID instead of just true
-                    (ok new-ticket-id)
-                )
-                (err u102) ;; STX transfer failed
-            )
+                  ;; Store ticket with original mapping
+                  (map-set tickets (tuple (event-id event-id) (owner tx-sender))
+                    (tuple (used false) (ticket-id new-ticket-id)))
+                  ;;Store reverse mapping for easy lookup
+                  (map-set ticket-owners (tuple (ticket-id new-ticket-id))
+                    (tuple 
+                      (owner tx-sender)
+                      (event-id event-id)
+                      (used false)
+                      (purchase-timestamp stacks-block-height)))
+                  (var-set next-ticket-id (+ new-ticket-id u1))
+                  (map-set events (tuple (event-id event-id))
+                    (merge event-data (tuple (tickets-sold (+ sold u1)))))
+                  ;;  Return the ticket ID instead of just true
+                  (ok new-ticket-id))
+                (err u102))
           )
       ))
     (err u103) ;; Event not found
@@ -125,27 +110,21 @@
 (define-public (transfer-ticket (event-id uint) (to principal))
   (match (map-get? tickets (tuple (event-id event-id) (owner tx-sender)))
     ticket-data
-    (if (get used ticket-data)
-        (err u201) ;; Ticket already used
-        (let ((ticket-id (get ticket-id ticket-data)))
-          (begin
-            ;; Update original mapping
-            (map-delete tickets (tuple (event-id event-id) (owner tx-sender)))
-            (map-set tickets (tuple (event-id event-id) (owner to))
-              (tuple (used false) (ticket-id ticket-id))
-            )
-            ;; Update reverse mapping
-            (map-set ticket-owners (tuple (ticket-id ticket-id))
-              (merge (unwrap-panic (map-get? ticket-owners {ticket-id: ticket-id}))
-                     (tuple (owner to))
-              )
-            )
-            (ok true)
-          )
-        )
-    )
-    (err u202) ;; No ticket found
-  )
+    (let ((ticket-id (get ticket-id ticket-data)))
+      (asserts! (not (get used ticket-data)) (err u201))
+      ;; Update original mapping
+      (map-delete tickets (tuple (event-id event-id) (owner tx-sender)))
+      (map-set tickets (tuple (event-id event-id) (owner to))
+        (tuple (used false) (ticket-id ticket-id)))
+      ;; Update reverse mapping
+      (match (map-get? ticket-owners {ticket-id: ticket-id})
+        ticket-owner-data
+        (begin
+          (map-set ticket-owners (tuple (ticket-id ticket-id))
+            (merge ticket-owner-data (tuple (owner to))))
+          (ok true))
+        (err u203)))
+    (err u202))
 )
 
 ;; ----  Check-In by Ticket ID ----
@@ -165,19 +144,14 @@
                 (begin
                   ;; Update both mappings
                   (map-set tickets (tuple (event-id event-id) (owner ticket-owner))
-                    (tuple (used true) (ticket-id ticket-id))
-                  )
+                    (tuple (used true) (ticket-id ticket-id)))
                   (map-set ticket-owners (tuple (ticket-id ticket-id))
-                    (merge ticket-info (tuple (used true)))
-                  )
+                    (merge ticket-info (tuple (used true))))
                   ;; Return success with ticket owner info
                   (ok {
                     ticket-owner: ticket-owner,
                     event-id: event-id,
-                    ticket-id: ticket-id
-                  })
-                )
-            )
+                    ticket-id: ticket-id})))
             (err u303) ;; Not event creator
         )
         (err u304) ;; Event not found
@@ -197,19 +171,16 @@
           (if (get used ticket-data)
               (err u301) ;; Already used
               (let ((ticket-id (get ticket-id ticket-data)))
-                (begin
-                  ;; Update both mappings
-                  (map-set tickets (tuple (event-id event-id) (owner user))
-                    (tuple (used true) (ticket-id ticket-id))
-                  )
-                  (map-set ticket-owners (tuple (ticket-id ticket-id))
-                    (merge (unwrap-panic (map-get? ticket-owners {ticket-id: ticket-id}))
-                           (tuple (used true))
-                    )
-                  )
-                  (ok true)
-                )
-              )
+                ;; Update both mappings
+                (map-set tickets (tuple (event-id event-id) (owner user))
+                  (tuple (used true) (ticket-id ticket-id)))
+                (match (map-get? ticket-owners {ticket-id: ticket-id})
+                  ticket-owner-data
+                  (begin
+                    (map-set ticket-owners (tuple (ticket-id ticket-id))
+                      (merge ticket-owner-data (tuple (used true))))
+                    (ok true))
+                  (err u306)))
           )
           (err u302) ;; No ticket found
         )
@@ -223,44 +194,28 @@
 (define-public (cancel-event (event-id uint))
   (match (map-get? events (tuple (event-id event-id)))
     event-data
-    (if (is-eq tx-sender (get creator event-data))
-        (begin
-          (map-set event-cancelled (tuple (event-id event-id)) true)
-          (ok true)
-        )
-        (err u501) ;; Not creator
-    )
-    (err u502) ;; Event not found
-  )
+    (begin
+      (asserts! (is-eq tx-sender (get creator event-data)) (err u501))
+      (map-set event-cancelled (tuple (event-id event-id)) true)
+      (ok true))
+    (err u502))
 )
 
 ;; --- Refund Ticket ----
 (define-public (refund-ticket (event-id uint))
-  (match (map-get? event-cancelled (tuple (event-id event-id)))
-    cancelled-status
-    (if cancelled-status
-        (match (map-get? events (tuple (event-id event-id)))
-          event-data
-          (match (map-get? tickets (tuple (event-id event-id) (owner tx-sender)))
-            ticket-data
-            (let ((ticket-id (get ticket-id ticket-data)))
-              (if (is-eq (stx-transfer? (get price event-data) (get creator event-data) tx-sender) (ok true))
-                  (begin
-                    (map-delete tickets (tuple (event-id event-id) (owner tx-sender)))
-                    (map-delete ticket-owners (tuple (ticket-id ticket-id)))
-                    (ok true)
-                  )
-                  (err u503) ;; STX transfer failed
-              )
-            )
-            (err u504) ;; No ticket
-          )
-          (err u505) ;; Event not found
-        )
-        (err u506) ;; Not cancelled
-    )
-    (err u506) ;; Not cancelled (event not in cancelled map)
-  )
+  (let ((cancelled-status (default-to false (map-get? event-cancelled (tuple (event-id event-id))))))
+    (asserts! cancelled-status (err u506))
+    (match (map-get? events (tuple (event-id event-id)))
+      event-data
+      (match (map-get? tickets (tuple (event-id event-id) (owner tx-sender)))
+        ticket-data
+        (let ((ticket-id (get ticket-id ticket-data)))
+          (try! (stx-transfer? (get price event-data) (get creator event-data) tx-sender))
+          (map-delete tickets (tuple (event-id event-id) (owner tx-sender)))
+          (map-delete ticket-owners (tuple (ticket-id ticket-id)))
+          (ok true))
+        (err u504))
+      (err u505)))
 )
 
 ;; ---- Read-only Functions ----
@@ -333,9 +288,7 @@
   (match (map-get? ticket-owners (tuple (ticket-id ticket-id)))
     ticket-info
     (not (get used ticket-info))
-    false
-  )
-)
+    false))
 
 ;; Check if event is cancelled
 (define-read-only (is-event-cancelled (event-id uint))

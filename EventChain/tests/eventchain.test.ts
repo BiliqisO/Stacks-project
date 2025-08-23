@@ -677,10 +677,9 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
       expect(Number(countResult.result.value)).toBeGreaterThanOrEqual(3);
     });
 
-    it.skip("should return 0 for non-existent organizer - isolated", () => {
-      // SKIPPED: Test isolation issues - state persists across tests
-      // Create a dummy address that definitely won't be an organizer
-      const nonOrganizerAddress = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM";
+    it("should return 0 for non-existent organizer - isolated", () => {
+      // Use the faucet address which is never added as an organizer in tests
+      const nonOrganizerAddress = accounts.get("faucet")!;
       
       const countResult = simnet.callReadOnlyFn(
         "eventchain",
