@@ -37,6 +37,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useStacks } from "@/hooks/useStacks";
+import { TicketScanner } from "@/components/TicketScanner";
+import { type TicketQRData } from "@/components/TicketQRCode";
 import {
   readEvents,
   readUserTickets,
@@ -611,39 +613,17 @@ export default function CheckInPage() {
                 value="qr-scan"
                 className="space-y-4"
               >
-                <div className="bg-muted p-8 rounded-lg text-center">
-                  <QrCode className="h-24 w-24 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground mb-4">
-                    QR Code Scanner integration
-                  </p>
-                  <Button
-                    onClick={() => setIsScanning(!isScanning)}
-                    className="mb-4"
-                    variant="outline"
-                  >
-                    {isScanning ? "Stop Scanning" : "Start Scanning"}
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Or enter ticket ID from QR code:
-                  </label>
-                  <div className="flex space-x-2">
-                    <Input
-                      value={qrInput}
-                      onChange={(e) => setQrInput(e.target.value)}
-                      placeholder="Ticket ID from QR code"
-                    />
-                    <Button
-                      onClick={handleQRCheckIn}
-                      disabled={isCheckingIn || !qrInput.trim()}
-                      variant="outline"
-                    >
-                      {isCheckingIn ? "Checking In..." : "Check In"}
-                    </Button>
-                  </div>
-                </div>
+                <TicketScanner 
+                  eventId={selectedEvent?.toString()}
+                  onTicketCheckedIn={(ticketData: TicketQRData) => {
+                    // Handle the checked-in ticket
+                    console.log("Ticket checked in:", ticketData);
+                    // For now, just show a success message
+                    setError(null);
+                    // Optionally refresh events
+                    loadEvents();
+                  }}
+                />
               </TabsContent>
 
               <TabsContent

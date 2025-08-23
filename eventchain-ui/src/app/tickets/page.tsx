@@ -34,6 +34,8 @@ import { useTickets } from "@/hooks/useTickets";
 import { useStacks } from "@/hooks/useStacks";
 import { transferTicket } from "@/lib/stacks-utils";
 import { WalletConnect } from "@/components/wallet-connect";
+import { TicketQRDialog } from "@/components/TicketQRDialog";
+import { type TicketQRData } from "@/components/TicketQRCode";
 
 export default function TicketsPage() {
   const { tickets, transferHistory, isLoading, error } = useTickets();
@@ -42,6 +44,8 @@ export default function TicketsPage() {
   const [transferAddress, setTransferAddress] = useState("");
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [selectedTicketForQR, setSelectedTicketForQR] = useState<any>(null);
 
   const handleTransfer = async () => {
     if (!selectedTicket || !transferAddress) return;
@@ -59,6 +63,28 @@ export default function TicketsPage() {
     } finally {
       setIsTransferring(false);
     }
+  };
+
+  const showQRCode = (ticket: any) => {
+    console.log("Tickets page - Raw ticket data for QR:", ticket);
+    
+    const ticketQRData: TicketQRData = {
+      ticketId: ticket.tokenId || `TKT-${ticket.id}`,
+      eventId: ticket.id?.toString() || "0",
+      eventTitle: ticket.eventTitle || "Unknown Event",
+      ownerAddress: address || "",
+      eventDate: ticket.eventDate || "Unknown Date",
+      eventTime: ticket.eventTime || "Unknown Time", 
+      location: ticket.location || "TBD",
+      price: ticket.priceDisplay || "0.00 STX",
+      used: ticket.status === "used",
+      timestamp: Math.floor(Date.now() / 1000) // Current timestamp as fallback
+    };
+    
+    console.log("Tickets page - Final QR data:", ticketQRData);
+    
+    setSelectedTicketForQR(ticketQRData);
+    setQrDialogOpen(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -248,34 +274,15 @@ export default function TicketsPage() {
                       </div>
 
                       <div className="flex space-x-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 bg-transparent"
-                            >
-                              <QrCode className="h-4 w-4 mr-2" />
-                              Show QR
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Ticket QR Code</DialogTitle>
-                              <DialogDescription>
-                                Show this QR code at the event entrance
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="flex flex-col items-center space-y-4">
-                              <div className="bg-white p-8 rounded-lg">
-                                <QrCode className="h-48 w-48 text-black" />
-                              </div>
-                              <p className="text-sm text-muted-foreground">
-                                {ticket.qrCode}
-                              </p>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 bg-transparent"
+                          onClick={() => showQRCode(ticket)}
+                        >
+                          <QrCode className="h-4 w-4 mr-2" />
+                          Show QR
+                        </Button>
 
                         {ticket.status === "active" && (
                           <Dialog
@@ -396,6 +403,18 @@ export default function TicketsPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* QR Code Dialog */}
+      {selectedTicketForQR && (
+        <TicketQRDialog
+          isOpen={qrDialogOpen}
+          onClose={() => {
+            setQrDialogOpen(false);
+            setSelectedTicketForQR(null);
+          }}
+          ticketData={selectedTicketForQR}
+        />
+      )}
     </div>
   );
 }

@@ -6,49 +6,38 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Clock, Ticket, QrCode } from "lucide-react";
 import { useStacks } from "@/hooks/useStacks";
-import { readUserTickets } from "@/lib/stacks-utils";
+import { useTickets } from "@/hooks/useTickets";
+import { TicketQRDialog } from "@/components/TicketQRDialog";
+import { type TicketQRData } from "@/components/TicketQRCode";
 
 export default function MyTicketsPage() {
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [selectedTicketForQR, setSelectedTicketForQR] = useState<any>(null);
   const { address, isSignedIn } = useStacks();
+  const { tickets, isLoading, error } = useTickets();
 
-  useEffect(() => {
-    if (address && isSignedIn) {
-      loadUserTickets();
-    } else {
-      setTickets([]);
-      setIsLoading(false);
-    }
-  }, [address, isSignedIn]);
 
-  const loadUserTickets = async () => {
-    try {
-      setIsLoading(true);
-      const userTickets = await readUserTickets(address!);
-      setTickets(userTickets);
-    } catch (error) {
-      console.error("Error loading tickets:", error);
-      setTickets([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString("en-US", {
-      weekday: "short",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const formatTime = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const showQRCode = (ticket: any, index: number) => {
+    console.log("My-tickets page - ticket data for QR:", ticket);
+    
+    // Use the already transformed data from useTickets hook
+    const ticketQRData: TicketQRData = {
+      ticketId: ticket.tokenId || `TKT-${ticket.id}`,
+      eventId: ticket.id?.toString() || "0",
+      eventTitle: ticket.eventTitle || "Unknown Event",
+      ownerAddress: address || "",
+      eventDate: ticket.eventDate || "Unknown Date",
+      eventTime: ticket.eventTime || "Unknown Time",
+      location: ticket.location || "TBD",
+      price: ticket.priceDisplay || "0.00 STX",
+      used: ticket.status === "used",
+      timestamp: Math.floor(Date.now() / 1000) // Current timestamp as fallback
+    };
+    
+    console.log("My-tickets page - Final QR data:", ticketQRData);
+    
+    setSelectedTicketForQR(ticketQRData);
+    setQrDialogOpen(true);
   };
 
   if (!isSignedIn) {
@@ -92,30 +81,31 @@ export default function MyTicketsPage() {
             </Card>
           ))}
         </div>
+      ) : error ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-red-500 mb-4">Error loading tickets: {error}</p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </CardContent>
+        </Card>
       ) : tickets.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {tickets.map((ticket, index) => {
-            const eventData = ticket.result;
-            const eventName = eventData?.name || `Event ${ticket.id}`;
-            const location = eventData?.location || "TBD";
-            const timestamp = eventData?.timestamp || 0;
-            const price = eventData?.price || 0;
-
             return (
               <Card key={index} className="relative overflow-hidden">
                 <div className="absolute top-4 right-4">
-                  <Badge variant={ticket.isCheckedIn ? "secondary" : "default"}>
-                    {ticket.isCheckedIn ? "Used" : "Active"}
+                  <Badge variant={ticket.status === "used" ? "secondary" : "default"}>
+                    {ticket.status === "used" ? "Used" : "Active"}
                   </Badge>
                 </div>
 
                 <CardHeader className="pb-4">
                   <CardTitle className="text-lg line-clamp-2 pr-16">
-                    {eventName}
+                    {ticket.eventTitle}
                   </CardTitle>
                   <CardDescription className="flex items-center">
                     <MapPin className="h-4 w-4 mr-1" />
-                    {location}
+                    {ticket.location}
                   </CardDescription>
                 </CardHeader>
 
@@ -123,15 +113,15 @@ export default function MyTicketsPage() {
                   <div className="space-y-2">
                     <div className="flex items-center text-sm">
                       <Calendar className="h-4 w-4 mr-2" />
-                      {formatDate(timestamp)}
+                      {ticket.eventDate}
                     </div>
                     <div className="flex items-center text-sm">
                       <Clock className="h-4 w-4 mr-2" />
-                      {formatTime(timestamp)}
+                      {ticket.eventTime}
                     </div>
                     <div className="flex items-center text-sm">
                       <Ticket className="h-4 w-4 mr-2" />
-                      {(price / 1000000).toFixed(2)} STX
+                      {ticket.priceDisplay}
                     </div>
                   </div>
 
@@ -140,11 +130,7 @@ export default function MyTicketsPage() {
                       variant="outline" 
                       size="sm" 
                       className="flex-1"
-                      onClick={() => {
-                        // Generate a simple ticket ID for demo
-                        const ticketId = `TKT-${ticket.id}-${index + 1}`;
-                        alert(`Ticket ID: ${ticketId}\n\nShow this ID at the event entrance for check-in.`);
-                      }}
+                      onClick={() => showQRCode(ticket, index)}
                     >
                       <QrCode className="h-4 w-4 mr-1" />
                       Show QR
@@ -154,7 +140,7 @@ export default function MyTicketsPage() {
                       size="sm"
                       onClick={() => {
                         // Open event details
-                        window.open(`/events/${ticket.id}`, "_blank");
+                        window.open(`/event/${ticket.id}`, "_blank");
                       }}
                     >
                       Details
@@ -178,6 +164,18 @@ export default function MyTicketsPage() {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* QR Code Dialog */}
+      {selectedTicketForQR && (
+        <TicketQRDialog
+          isOpen={qrDialogOpen}
+          onClose={() => {
+            setQrDialogOpen(false);
+            setSelectedTicketForQR(null);
+          }}
+          ticketData={selectedTicketForQR}
+        />
       )}
     </div>
   );
