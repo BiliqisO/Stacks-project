@@ -131,6 +131,14 @@ export default function HomePage() {
                     src={event.image || "/placeholder.svg"}
                     alt={event.title}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.log("Event list image failed to load:", event.image);
+                      const img = e.target as HTMLImageElement;
+                      if (img.src !== "/placeholder.svg") {
+                        img.src = "/placeholder.svg";
+                      }
+                    }}
+                    onLoad={() => console.log("Event list image loaded:", event.image)}
                   />
                 </div>
                 <CardHeader>

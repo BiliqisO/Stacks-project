@@ -151,6 +151,21 @@ export const useEvent = (eventId: string | number) => {
       if (Object.keys(eventMetadata).length === 0) {
         eventMetadata = JSON.parse(localStorage.getItem(eventKey2) || '{}');
       }
+      
+      // If still not found, try searching through all localStorage keys for any event metadata
+      if (Object.keys(eventMetadata).length === 0) {
+        const allKeys = Object.keys(localStorage);
+        const metadataKeys = allKeys.filter(key => key.startsWith('event-metadata-') && key.includes(title));
+        
+        for (const key of metadataKeys) {
+          const possibleMetadata = JSON.parse(localStorage.getItem(key) || '{}');
+          if (possibleMetadata.title === title || possibleMetadata.imageHash) {
+            eventMetadata = possibleMetadata;
+            console.log(`Found event metadata with alternative key: ${key}`, possibleMetadata);
+            break;
+          }
+        }
+      }
     }
 
     const description =
@@ -167,12 +182,33 @@ export const useEvent = (eventId: string | number) => {
     let storedImage = "/placeholder.svg?height=400&width=800";
     
     const imageHash = eventMetadata.imageHash || localData.imageHash;
-    console.log("Event metadata for image (details):", { eventMetadata, localData, imageHash, eventKey1, eventKey2 });
+    console.log("Event metadata for image (details):", { 
+      eventMetadata, 
+      localData, 
+      imageHash, 
+      eventKey1, 
+      eventKey2,
+      title,
+      timestamp,
+      availableLocalStorageKeys: typeof window !== 'undefined' ? 
+        Object.keys(localStorage).filter(k => k.includes('event-metadata')) : []
+    });
     
     if (imageHash && imageHash !== "") {
-      // Construct IPFS gateway URL from the stored hash
-      storedImage = `https://gateway.pinata.cloud/ipfs/${imageHash}`;
+      // Try multiple IPFS gateways for better reliability
+      const ipfsGateways = [
+        'https://gateway.pinata.cloud/ipfs',
+        'https://ipfs.io/ipfs',
+        'https://cloudflare-ipfs.com/ipfs',
+        'https://dweb.link/ipfs'
+      ];
+      
+      // Use the primary gateway (Pinata) as created
+      storedImage = `${ipfsGateways[0]}/${imageHash}`;
       console.log("Using IPFS image (details):", storedImage);
+      
+      // Store alternative gateways for fallback in the UI component
+      (window as any).ipfsImageFallbacks = ipfsGateways.slice(1).map(gateway => `${gateway}/${imageHash}`);
     } else if (eventMetadata.image || localData.image) {
       // Fallback to direct image URL if available
       storedImage = eventMetadata.image || localData.image;

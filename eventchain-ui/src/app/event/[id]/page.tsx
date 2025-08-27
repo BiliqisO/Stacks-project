@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   ArrowLeft,
   Calendar,
@@ -60,6 +60,8 @@ export default function EventDetailPage({
 }) {
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [currentImageSrc, setCurrentImageSrc] = useState<string>("");
   const { isSignedIn, address } = useStacks();
   const { event, isLoading, error, updateEventData } = useEvent(params.id);
 
@@ -82,6 +84,32 @@ export default function EventDetailPage({
 
   const isOrganizer =
     event && address && event.creator.toLowerCase() === address.toLowerCase();
+
+  // Handle image loading errors with IPFS gateway fallbacks
+  const handleImageError = () => {
+    console.log("Image failed to load:", currentImageSrc);
+    
+    if (!imageError && typeof window !== 'undefined' && (window as any).ipfsImageFallbacks) {
+      const fallbacks = (window as any).ipfsImageFallbacks as string[];
+      if (fallbacks.length > 0) {
+        const nextFallback = fallbacks.shift();
+        console.log("Trying fallback gateway:", nextFallback);
+        setCurrentImageSrc(nextFallback);
+        return;
+      }
+    }
+    
+    setImageError(true);
+    setCurrentImageSrc("/placeholder.svg");
+  };
+
+  // Update image source when event changes
+  React.useEffect(() => {
+    if (event && event.image) {
+      setCurrentImageSrc(event.image);
+      setImageError(false);
+    }
+  }, [event]);
 
   const handlePurchase = async () => {
     if (!isSignedIn) {
@@ -338,12 +366,19 @@ export default function EventDetailPage({
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Event Image */}
-            <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+            <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
               <img
-                src={event.image || "/placeholder.svg"}
+                src={currentImageSrc || event.image || "/placeholder.svg"}
                 alt={event.title}
                 className="w-full h-full object-cover"
+                onError={handleImageError}
+                onLoad={() => console.log("Image loaded successfully:", currentImageSrc)}
               />
+              {imageError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                  <p className="text-muted-foreground text-sm">Image unavailable</p>
+                </div>
+              )}
             </div>
 
             {/* Event Info */}

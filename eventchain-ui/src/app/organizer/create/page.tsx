@@ -105,8 +105,14 @@ export default function CreateEventPage() {
           createdAt: new Date().toISOString(),
         };
         
-        const eventKey = `event-metadata-${formData.title}-${timestamp}`;
-        localStorage.setItem(eventKey, JSON.stringify(eventMetadata));
+        // Store with multiple key formats for better compatibility
+        const eventKey1 = `event-metadata-${formData.title}-${timestamp}`;
+        const eventKey2 = `event-metadata-${formData.title}-${formData.location}-${timestamp}`;
+        
+        localStorage.setItem(eventKey1, JSON.stringify(eventMetadata));
+        localStorage.setItem(eventKey2, JSON.stringify(eventMetadata));
+        
+        console.log("Stored event metadata with keys:", { eventKey1, eventKey2, eventMetadata });
       }
 
       // Redirect to events page on success
