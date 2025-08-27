@@ -13,7 +13,8 @@
     timestamp: uint,
     price: uint,
     total-tickets: uint,
-    tickets-sold: uint
+    tickets-sold: uint,
+    created-timestamp: uint
 })
 
 ;; ticket mapping (by event-id and owner)
@@ -59,7 +60,8 @@
             (timestamp timestamp)
             (price price)
             (total-tickets total-tickets)
-            (tickets-sold u0)))
+            (tickets-sold u0)
+            (created-timestamp stacks-block-height)))
         (var-set next-event-id (+ event-id u1))
         (ok event-id))
       (err u402))
