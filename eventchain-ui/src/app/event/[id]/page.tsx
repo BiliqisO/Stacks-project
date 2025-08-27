@@ -193,6 +193,63 @@ export default function EventDetailPage({
     setEditingDescription("");
   };
 
+  const handleShareEvent = async () => {
+    if (!event) return;
+
+    const eventUrl = `${window.location.origin}/event/${event.id}`;
+    const shareText = `Check out this amazing event: ${event.title} - ${event.description.slice(0, 100)}...`;
+
+    // Try to use Web Share API if available
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: event.title,
+          text: shareText,
+          url: eventUrl,
+        });
+      } catch (error) {
+        // User cancelled sharing or sharing failed
+        console.log("Web share cancelled or failed:", error);
+        // Fall back to copying to clipboard
+        fallbackShare(eventUrl, shareText);
+      }
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      fallbackShare(eventUrl, shareText);
+    }
+  };
+
+  const fallbackShare = async (url: string, text: string) => {
+    try {
+      // Try to copy URL to clipboard
+      await navigator.clipboard.writeText(url);
+      alert("Event link copied to clipboard!");
+    } catch (error) {
+      // If clipboard API fails, show a dialog with the link
+      const shareData = `${text}\n\nEvent Link: ${url}`;
+      
+      // Create a temporary text area to select the text for manual copying
+      const textArea = document.createElement("textarea");
+      textArea.value = shareData;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        document.execCommand("copy");
+        alert("Event details copied to clipboard!");
+      } catch (err) {
+        // Final fallback - just show an alert with the URL
+        alert(`Share this event:\n\n${url}`);
+      }
+      
+      document.body.removeChild(textArea);
+    }
+  };
+
   const totalPrice = event
     ? (Number.parseInt(event.price) * ticketQuantity) / 1000000
     : 0;
@@ -267,6 +324,7 @@ export default function EventDetailPage({
             <Button
               variant="outline"
               size="sm"
+              onClick={handleShareEvent}
             >
               <Share2 className="h-4 w-4 mr-2" />
               Share Event
