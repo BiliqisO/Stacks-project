@@ -195,7 +195,7 @@ export const useEvent = (eventId: string | number) => {
     });
     
     if (imageHash && imageHash !== "") {
-      // Try multiple IPFS gateways for better reliability
+      // Use the most reliable IPFS gateway first  
       const ipfsGateways = [
         'https://gateway.pinata.cloud/ipfs',
         'https://ipfs.io/ipfs',
@@ -206,9 +206,6 @@ export const useEvent = (eventId: string | number) => {
       // Use the primary gateway (Pinata) as created
       storedImage = `${ipfsGateways[0]}/${imageHash}`;
       console.log("Using IPFS image (details):", storedImage);
-      
-      // Store alternative gateways for fallback in the UI component
-      (window as any).ipfsImageFallbacks = ipfsGateways.slice(1).map(gateway => `${gateway}/${imageHash}`);
     } else if (eventMetadata.image || localData.image) {
       // Fallback to direct image URL if available
       storedImage = eventMetadata.image || localData.image;

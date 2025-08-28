@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEvents } from "@/hooks/useEvents";
+import IPFSImage from "@/components/IPFSImage";
 
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -127,18 +128,13 @@ export default function HomePage() {
                 className="overflow-hidden hover:shadow-lg transition-shadow"
               >
                 <div className="aspect-video bg-muted">
-                  <img
+                  <IPFSImage
                     src={event.image || "/placeholder.svg"}
                     alt={event.title}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.log("Event list image failed to load:", event.image);
-                      const img = e.target as HTMLImageElement;
-                      if (img.src !== "/placeholder.svg") {
-                        img.src = "/placeholder.svg";
-                      }
-                    }}
+                    fallback="/placeholder.svg"
                     onLoad={() => console.log("Event list image loaded:", event.image)}
+                    onError={() => console.log("Event list image failed to load:", event.image)}
                   />
                 </div>
                 <CardHeader>

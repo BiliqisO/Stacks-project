@@ -33,9 +33,16 @@ export default function CreateEventPage() {
   // Upload image to IPFS using PinataSDK
   const uploadToIPFS = async (file: File): Promise<string> => {
     try {
+      // Check if JWT token is available
+      const pinataJwt = process.env.NEXT_PUBLIC_PINATA_JWT;
+      if (!pinataJwt) {
+        console.warn('⚠️ NEXT_PUBLIC_PINATA_JWT not configured, skipping IPFS upload');
+        throw new Error('IPFS configuration not available');
+      }
+
       // Initialize Pinata SDK - for client-side usage, we'll use JWT token
       const pinata = new PinataSDK({
-        pinataJwt: process.env.NEXT_PUBLIC_PINATA_JWT!,
+        pinataJwt: pinataJwt,
       });
 
       // Upload file using the modern PinataSDK
@@ -45,7 +52,7 @@ export default function CreateEventPage() {
       return result.cid; // Returns the IPFS CID
     } catch (error) {
       console.error('❌ IPFS upload error:', error);
-      throw new Error('Failed to upload image to IPFS');
+      throw new Error('Failed to upload image to IPFS. Please try again or create event without image.');
     }
   };
 

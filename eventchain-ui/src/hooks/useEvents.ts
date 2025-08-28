@@ -136,8 +136,14 @@ export const useEvents = () => {
     console.log("Event metadata for image:", { eventMetadata, localData, imageHash, eventKey1, eventKey2 });
     
     if (imageHash && imageHash !== "") {
-      // Construct IPFS gateway URL from the stored hash
-      storedImage = `https://gateway.pinata.cloud/ipfs/${imageHash}`;
+      // Use the most reliable IPFS gateway first
+      const ipfsGateways = [
+        'https://gateway.pinata.cloud/ipfs',
+        'https://ipfs.io/ipfs',
+        'https://cloudflare-ipfs.com/ipfs'
+      ];
+      
+      storedImage = `${ipfsGateways[0]}/${imageHash}`;
       console.log("Using IPFS image:", storedImage);
     } else if (eventMetadata.image || localData.image) {
       // Fallback to direct image URL if available
