@@ -14,7 +14,8 @@
     price: uint,
     total-tickets: uint,
     tickets-sold: uint,
-    created-timestamp: uint
+    created-timestamp: uint,
+    image: (string-utf8 100)
 })
 
 ;; ticket mapping (by event-id and owner)
@@ -48,6 +49,7 @@
     (timestamp uint)
     (price uint)
     (total-tickets uint)
+    (image (string-utf8 100))
   )
   (if (is-some (map-get? organizers {organizer: tx-sender}))
       (let ((event-id (var-get next-event-id)))
@@ -61,7 +63,8 @@
             (price price)
             (total-tickets total-tickets)
             (tickets-sold u0)
-            (created-timestamp stacks-block-height)))
+            (created-timestamp stacks-block-height)
+            (image image)))
         (var-set next-event-id (+ event-id u1))
         (ok event-id))
       (err u402))
