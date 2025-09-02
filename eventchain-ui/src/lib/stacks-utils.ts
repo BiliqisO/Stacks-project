@@ -81,7 +81,8 @@ export const createEvent = async (
   location: string,
   timestamp: number,
   price: number,
-  totalTickets: number
+  totalTickets: number,
+  image: string = ""
 ) => {
   console.log("=== Create Event Debug ===");
 
@@ -109,6 +110,7 @@ export const createEvent = async (
     Tx.uintCV(timestamp),
     Tx.uintCV(price),
     Tx.uintCV(totalTickets),
+    Tx.stringUtf8CV(image),
   ];
 
   console.log("Function args:", functionArgs);

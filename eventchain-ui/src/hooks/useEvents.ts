@@ -81,6 +81,8 @@ export const useEvents = () => {
     // Transform to match UI format
     const title = parsedData.name || parsedData.title || "Untitled Event";
     const location = parsedData.location || "TBD";
+    const blockchainImageHash = parsedData.image || "";
+    
     const timestamp = parsedData.timestamp || Math.floor(Date.now() / 1000);
     const price = parsedData.price || 0;
     const priceInSTX = price / 1000000; // Convert from microSTX to STX
@@ -129,22 +131,32 @@ export const useEvents = () => {
       }
     }
     
-    // Use stored image if available - construct IPFS URL from hash
+    // Use stored image if available - prioritize blockchain image hash
     let storedImage = "/placeholder.svg?height=200&width=300";
     
-    const imageHash = eventMetadata.imageHash || localData.imageHash;
-    console.log("Event metadata for image:", { eventMetadata, localData, imageHash, eventKey1, eventKey2 });
+    // Check for image hash in this priority order:
+    // 1. From blockchain (cross-device compatible)
+    // 2. From localStorage (device-specific)
+    const imageHash = blockchainImageHash || eventMetadata.imageHash || localData.imageHash;
+    console.log("Event metadata for image:", { 
+      blockchainImageHash, 
+      eventMetadata, 
+      localData, 
+      finalImageHash: imageHash, 
+      eventKey1, 
+      eventKey2 
+    });
     
     if (imageHash && imageHash !== "") {
       // Use the most reliable IPFS gateway first
       const ipfsGateways = [
         'https://gateway.pinata.cloud/ipfs',
-        'https://ipfs.io/ipfs',
-        'https://cloudflare-ipfs.com/ipfs'
+        'https://cloudflare-ipfs.com/ipfs',
+        'https://ipfs.io/ipfs'
       ];
       
       storedImage = `${ipfsGateways[0]}/${imageHash}`;
-      console.log("Using IPFS image:", storedImage);
+      console.log("Using IPFS image:", storedImage, "from source:", blockchainImageHash ? "blockchain" : "localStorage");
     } else if (eventMetadata.image || localData.image) {
       // Fallback to direct image URL if available
       storedImage = eventMetadata.image || localData.image;

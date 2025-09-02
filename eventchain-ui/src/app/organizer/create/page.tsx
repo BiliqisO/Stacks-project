@@ -99,7 +99,8 @@ export default function CreateEventPage() {
         formData.location,
         timestamp,
         priceInMicroSTX,
-        parseInt(formData.maxTickets)
+        parseInt(formData.maxTickets),
+        imageHash
       );
 
       // Store additional metadata (including IPFS hash) in localStorage
