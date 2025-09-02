@@ -76,6 +76,7 @@ export const useEvent = (eventId: string | number) => {
             "tickets-sold": tupleData["tickets-sold"]?.value
               ? Number(tupleData["tickets-sold"].value)
               : 0,
+            image: tupleData.image?.value || "",
           };
         }
       } else if (blockchainEvent.type === "tuple" && blockchainEvent.data) {
@@ -100,6 +101,35 @@ export const useEvent = (eventId: string | number) => {
             }
           }
         });
+      }
+      
+      // Additional parsing for nested tuple structures from Clarity
+      if (blockchainEvent && blockchainEvent.value && typeof blockchainEvent.value === 'object') {
+        const tupleData = blockchainEvent.value;
+        if (tupleData.image && tupleData.image.value) {
+          parsedData.image = tupleData.image.value;
+        }
+        if (tupleData.name && tupleData.name.value) {
+          parsedData.name = tupleData.name.value;
+        }
+        if (tupleData.location && tupleData.location.value) {
+          parsedData.location = tupleData.location.value;
+        }
+        if (tupleData.creator && tupleData.creator.value) {
+          parsedData.creator = tupleData.creator.value;
+        }
+        if (tupleData.timestamp && tupleData.timestamp.value) {
+          parsedData.timestamp = parseInt(tupleData.timestamp.value.toString());
+        }
+        if (tupleData.price && tupleData.price.value) {
+          parsedData.price = parseInt(tupleData.price.value.toString());
+        }
+        if (tupleData['total-tickets'] && tupleData['total-tickets'].value) {
+          parsedData['total-tickets'] = parseInt(tupleData['total-tickets'].value.toString());
+        }
+        if (tupleData['tickets-sold'] && tupleData['tickets-sold'].value) {
+          parsedData['tickets-sold'] = parseInt(tupleData['tickets-sold'].value.toString());
+        }
       }
     }
 
@@ -178,11 +208,15 @@ export const useEvent = (eventId: string | number) => {
       category = storedCategory;
     }
 
-    // Use stored image if available - construct IPFS URL from hash
+    // Use stored image if available - prioritize blockchain image hash
     let storedImage = "/placeholder.svg?height=400&width=800";
     
-    const imageHash = eventMetadata.imageHash || localData.imageHash;
+    // Check for image hash from multiple sources (prioritize blockchain)
+    const blockchainImageHash = parsedData.image || "";
+    const imageHash = blockchainImageHash || eventMetadata.imageHash || localData.imageHash;
+    console.log("🖼️ Image debugging for event details:", title);
     console.log("Event metadata for image (details):", { 
+      blockchainImageHash,
       eventMetadata, 
       localData, 
       imageHash, 
@@ -190,6 +224,7 @@ export const useEvent = (eventId: string | number) => {
       eventKey2,
       title,
       timestamp,
+      parsedDataImage: parsedData.image,
       availableLocalStorageKeys: typeof window !== 'undefined' ? 
         Object.keys(localStorage).filter(k => k.includes('event-metadata')) : []
     });

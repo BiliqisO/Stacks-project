@@ -74,6 +74,35 @@ export const useEvents = () => {
           }
         });
       }
+      
+      // Additional parsing for nested tuple structures from Clarity
+      if (eventData && eventData.value && typeof eventData.value === 'object') {
+        const tupleData = eventData.value;
+        if (tupleData.image && tupleData.image.value) {
+          parsedData.image = tupleData.image.value;
+        }
+        if (tupleData.name && tupleData.name.value) {
+          parsedData.name = tupleData.name.value;
+        }
+        if (tupleData.location && tupleData.location.value) {
+          parsedData.location = tupleData.location.value;
+        }
+        if (tupleData.creator && tupleData.creator.value) {
+          parsedData.creator = tupleData.creator.value;
+        }
+        if (tupleData.timestamp && tupleData.timestamp.value) {
+          parsedData.timestamp = parseInt(tupleData.timestamp.value.toString());
+        }
+        if (tupleData.price && tupleData.price.value) {
+          parsedData.price = parseInt(tupleData.price.value.toString());
+        }
+        if (tupleData['total-tickets'] && tupleData['total-tickets'].value) {
+          parsedData['total-tickets'] = parseInt(tupleData['total-tickets'].value.toString());
+        }
+        if (tupleData['tickets-sold'] && tupleData['tickets-sold'].value) {
+          parsedData['tickets-sold'] = parseInt(tupleData['tickets-sold'].value.toString());
+        }
+      }
     }
     
     console.log("Parsed event data:", parsedData);
@@ -81,7 +110,33 @@ export const useEvents = () => {
     // Transform to match UI format
     const title = parsedData.name || parsedData.title || "Untitled Event";
     const location = parsedData.location || "TBD";
-    const blockchainImageHash = parsedData.image || "";
+    // More robust image extraction with multiple fallback patterns
+    let blockchainImageHash = "";
+    
+    // Check multiple possible locations for the image hash
+    if (parsedData.image && parsedData.image !== "") {
+      blockchainImageHash = parsedData.image;
+    } else if (parsedData["image-hash"] && parsedData["image-hash"] !== "") {
+      blockchainImageHash = parsedData["image-hash"];
+    } else if (parsedData.imageHash && parsedData.imageHash !== "") {
+      blockchainImageHash = parsedData.imageHash;
+    } else if (eventData && eventData.image && eventData.image !== "") {
+      blockchainImageHash = eventData.image;
+    }
+    
+    // Clean up the image hash (remove any extra whitespace/formatting)
+    blockchainImageHash = blockchainImageHash.toString().trim();
+    
+    console.log("🖼️ Image debugging for event:", title);
+    console.log("🔍 Raw eventData:", eventData);
+    console.log("🔍 Raw parsedData fields:", Object.keys(parsedData));
+    console.log("🔍 Image field candidates:", {
+      'parsedData.image': parsedData.image,
+      'parsedData["image-hash"]': parsedData["image-hash"],
+      'parsedData.imageHash': parsedData.imageHash,
+      'eventData.image': eventData?.image,
+      'final blockchainImageHash': blockchainImageHash
+    });
     
     const timestamp = parsedData.timestamp || Math.floor(Date.now() / 1000);
     const price = parsedData.price || 0;
