@@ -11,6 +11,19 @@ interface IPFSImageProps {
   onError?: (error: Event) => void;
 }
 
+const isValidIPFSHash = (hash: string): boolean => {
+  // Basic IPFS hash validation (CIDv0 and CIDv1)
+  if (!hash) return false;
+  
+  // CIDv0: starts with Qm, 46 characters
+  if (hash.startsWith('Qm') && hash.length === 46) return true;
+  
+  // CIDv1: starts with b, z, or other multibase prefixes
+  if (hash.length >= 32 && /^[a-zA-Z0-9]+$/.test(hash)) return true;
+  
+  return false;
+};
+
 export const IPFSImage: React.FC<IPFSImageProps> = ({
   src,
   alt,
@@ -25,14 +38,14 @@ export const IPFSImage: React.FC<IPFSImageProps> = ({
 
   const ipfsGateways = [
     'https://gateway.pinata.cloud/ipfs',
-    'https://ipfs.io/ipfs',
     'https://cloudflare-ipfs.com/ipfs',
     'https://dweb.link/ipfs',
+    'https://ipfs.io/ipfs',
     'https://w3s.link/ipfs'
   ];
 
   const handleImageError = useCallback((e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    console.log("Image failed to load:", currentSrc);
+    console.error("Image failed to load:", currentSrc, "Error:", e.nativeEvent);
     
     // Call the original error handler if provided
     if (onError) {
@@ -44,6 +57,16 @@ export const IPFSImage: React.FC<IPFSImageProps> = ({
       const ipfsHash = currentSrc.split('/ipfs/')[1];
       const currentGateway = currentSrc.split('/ipfs/')[0];
       
+      console.log("IPFS debugging:", { currentSrc, ipfsHash, currentGateway, attemptedGateways });
+      
+      // Validate IPFS hash before trying other gateways
+      if (!isValidIPFSHash(ipfsHash)) {
+        console.error("Invalid IPFS hash detected:", ipfsHash);
+        setHasError(true);
+        setCurrentSrc(fallback);
+        return;
+      }
+      
       // Find gateways we haven't tried yet
       const untried = ipfsGateways.filter(
         gateway => gateway !== currentGateway && !attemptedGateways.includes(gateway)
@@ -52,11 +75,13 @@ export const IPFSImage: React.FC<IPFSImageProps> = ({
       if (untried.length > 0) {
         const nextGateway = untried[0];
         const nextUrl = `${nextGateway}/${ipfsHash}`;
-        console.log("Trying fallback gateway:", nextUrl);
+        console.log("Trying fallback IPFS gateway:", nextUrl);
         
         setAttemptedGateways(prev => [...prev, currentGateway]);
         setCurrentSrc(nextUrl);
         return;
+      } else {
+        console.warn("All IPFS gateways exhausted for hash:", ipfsHash);
       }
     }
 
