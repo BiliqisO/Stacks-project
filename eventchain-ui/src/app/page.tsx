@@ -130,7 +130,9 @@ export default function HomePage() {
           {/* Events Grid */}
           {!isLoading && !error && filteredEvents.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEvents.map((event) => (
+              {filteredEvents.map((event) => {
+                console.log("🏠 Home page rendering event:", event.title, "Image:", event.image);
+                return (
               <Card
                 key={event.id}
                 className="overflow-hidden hover:shadow-lg transition-shadow"
@@ -141,8 +143,8 @@ export default function HomePage() {
                     alt={event.title}
                     className="w-full h-full object-cover"
                     fallback="/placeholder.svg"
-                    onLoad={() => console.log("Event list image loaded:", event.image)}
-                    onError={() => console.log("Event list image failed to load:", event.image)}
+                    onLoad={() => console.log("✅ Home page image loaded:", event.title, event.image)}
+                    onError={() => console.log("❌ Home page image failed:", event.title, event.image)}
                   />
                 </div>
                 <CardHeader>
@@ -184,7 +186,8 @@ export default function HomePage() {
                   </div>
                 </CardContent>
               </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

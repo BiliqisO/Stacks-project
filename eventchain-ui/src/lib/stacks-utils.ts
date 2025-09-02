@@ -818,6 +818,7 @@ export const readOrganizerEvents = async (organizerAddress: string) => {
                 "tickets-sold": tupleData["tickets-sold"]?.value
                   ? Number(tupleData["tickets-sold"].value)
                   : 0,
+                image: tupleData.image?.value || "",
               };
             }
           } else if ((eventResult as any).type !== "none") {

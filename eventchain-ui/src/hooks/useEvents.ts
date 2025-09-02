@@ -81,27 +81,16 @@ export const useEvents = () => {
         if (tupleData.image && tupleData.image.value) {
           parsedData.image = tupleData.image.value;
         }
-        if (tupleData.name && tupleData.name.value) {
-          parsedData.name = tupleData.name.value;
-        }
-        if (tupleData.location && tupleData.location.value) {
-          parsedData.location = tupleData.location.value;
-        }
-        if (tupleData.creator && tupleData.creator.value) {
-          parsedData.creator = tupleData.creator.value;
-        }
-        if (tupleData.timestamp && tupleData.timestamp.value) {
-          parsedData.timestamp = parseInt(tupleData.timestamp.value.toString());
-        }
-        if (tupleData.price && tupleData.price.value) {
-          parsedData.price = parseInt(tupleData.price.value.toString());
-        }
-        if (tupleData['total-tickets'] && tupleData['total-tickets'].value) {
-          parsedData['total-tickets'] = parseInt(tupleData['total-tickets'].value.toString());
-        }
-        if (tupleData['tickets-sold'] && tupleData['tickets-sold'].value) {
-          parsedData['tickets-sold'] = parseInt(tupleData['tickets-sold'].value.toString());
-        }
+      }
+      
+      // Handle direct tuple parsing (when eventData is the tuple itself)
+      if (eventData && eventData.image && typeof eventData.image === 'object' && eventData.image.value) {
+        parsedData.image = eventData.image.value;
+      }
+      
+      // Handle case where image is directly accessible
+      if (eventData && typeof eventData.image === 'string') {
+        parsedData.image = eventData.image;
       }
     }
     
