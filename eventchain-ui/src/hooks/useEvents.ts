@@ -26,20 +26,42 @@ export const useEvents = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Test function to debug image data
+  const debugImageData = (blockchainEvent: any) => {
+    console.log("🐛 === IMAGE DEBUG START ===");
+    console.log("🐛 Full blockchain event object:", JSON.stringify(blockchainEvent, null, 2));
+    console.log("🐛 Event data structure:", blockchainEvent?.result);
+    console.log("🐛 Event data type:", typeof blockchainEvent?.result);
+    
+    if (blockchainEvent?.result?.type === 'some') {
+      console.log("🐛 Found 'some' type, checking value:", blockchainEvent.result.value);
+      if (blockchainEvent.result.value?.type === 'tuple') {
+        console.log("🐛 Found tuple in some, checking tuple value:", blockchainEvent.result.value.value);
+        const tupleData = blockchainEvent.result.value.value;
+        console.log("🐛 Tuple fields:", Object.keys(tupleData || {}));
+        console.log("🐛 Image field in tuple:", tupleData?.image);
+      }
+    }
+    console.log("🐛 === IMAGE DEBUG END ===");
+  };
 
   const transformBlockchainEvent = (blockchainEvent: any): Event => {
+    // Debug the image data first
+    debugImageData(blockchainEvent);
+    
     // Handle Clarity data structure from the blockchain
     const eventData = blockchainEvent.result || blockchainEvent;
     console.log("Transforming blockchain event:", eventData);
     
-    // Parse Clarity tuple data
+    // Parse Clarity tuple data with comprehensive handling
     let parsedData: any = {};
     if (eventData && typeof eventData === 'object') {
       // Handle tuple response from Clarity
       if (eventData.type === 'tuple' && eventData.data) {
         parsedData = eventData.data;
       } else if (eventData.type === 'some' && eventData.value) {
-        // Handle optional response
+        // Handle optional response - this is the most common format from get-event
         const innerValue = eventData.value;
         if (innerValue.type === 'tuple' && innerValue.value) {
           const tupleData = innerValue.value;
@@ -51,6 +73,7 @@ export const useEvents = () => {
             price: tupleData.price?.value ? Number(tupleData.price.value) : 0,
             "total-tickets": tupleData["total-tickets"]?.value ? Number(tupleData["total-tickets"].value) : 0,
             "tickets-sold": tupleData["tickets-sold"]?.value ? Number(tupleData["tickets-sold"].value) : 0,
+            image: tupleData.image?.value || "", // Extract image from blockchain
           };
         }
       } else {
@@ -99,22 +122,8 @@ export const useEvents = () => {
     // Transform to match UI format
     const title = parsedData.name || parsedData.title || "Untitled Event";
     const location = parsedData.location || "TBD";
-    // More robust image extraction with multiple fallback patterns
-    let blockchainImageHash = "";
-    
-    // Check multiple possible locations for the image hash
-    if (parsedData.image && parsedData.image !== "") {
-      blockchainImageHash = parsedData.image;
-    } else if (parsedData["image-hash"] && parsedData["image-hash"] !== "") {
-      blockchainImageHash = parsedData["image-hash"];
-    } else if (parsedData.imageHash && parsedData.imageHash !== "") {
-      blockchainImageHash = parsedData.imageHash;
-    } else if (eventData && eventData.image && eventData.image !== "") {
-      blockchainImageHash = eventData.image;
-    }
-    
-    // Clean up the image hash (remove any extra whitespace/formatting)
-    blockchainImageHash = blockchainImageHash.toString().trim();
+    // Extract image hash from blockchain data only
+    const blockchainImageHash = (parsedData.image || "").toString().trim();
     
     console.log("🖼️ Image debugging for event:", title);
     console.log("🔍 Raw eventData:", eventData);
@@ -178,18 +187,9 @@ export const useEvents = () => {
     // Use stored image if available - prioritize blockchain image hash
     let storedImage = "/placeholder.svg?height=200&width=300";
     
-    // Check for image hash in this priority order:
-    // 1. From blockchain (cross-device compatible)
-    // 2. From localStorage (device-specific)
-    const imageHash = blockchainImageHash || eventMetadata.imageHash || localData.imageHash;
-    console.log("Event metadata for image:", { 
-      blockchainImageHash, 
-      eventMetadata, 
-      localData, 
-      finalImageHash: imageHash, 
-      eventKey1, 
-      eventKey2 
-    });
+    // Image hash should come from blockchain only for cross-device compatibility
+    const imageHash = blockchainImageHash;
+    console.log("🔍 Blockchain image hash for event:", title, "->", blockchainImageHash || "NONE");
     
     if (imageHash && imageHash !== "") {
       // Use the most reliable IPFS gateway first
@@ -200,11 +200,9 @@ export const useEvents = () => {
       ];
       
       storedImage = `${ipfsGateways[0]}/${imageHash}`;
-      console.log("Using IPFS image:", storedImage, "from source:", blockchainImageHash ? "blockchain" : "localStorage");
-    } else if (eventMetadata.image || localData.image) {
-      // Fallback to direct image URL if available
-      storedImage = eventMetadata.image || localData.image;
-      console.log("Using fallback image:", storedImage);
+      console.log("✅ Using IPFS image:", storedImage, "from blockchain");
+    } else {
+      console.log("❌ No blockchain image hash found, using placeholder for event:", title);
     }
     
     return {

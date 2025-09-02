@@ -211,23 +211,10 @@ export const useEvent = (eventId: string | number) => {
     // Use stored image if available - prioritize blockchain image hash
     let storedImage = "/placeholder.svg?height=400&width=800";
     
-    // Check for image hash from multiple sources (prioritize blockchain)
+    // Image hash should come from blockchain only for cross-device compatibility
     const blockchainImageHash = parsedData.image || "";
-    const imageHash = blockchainImageHash || eventMetadata.imageHash || localData.imageHash;
-    console.log("🖼️ Image debugging for event details:", title);
-    console.log("Event metadata for image (details):", { 
-      blockchainImageHash,
-      eventMetadata, 
-      localData, 
-      imageHash, 
-      eventKey1, 
-      eventKey2,
-      title,
-      timestamp,
-      parsedDataImage: parsedData.image,
-      availableLocalStorageKeys: typeof window !== 'undefined' ? 
-        Object.keys(localStorage).filter(k => k.includes('event-metadata')) : []
-    });
+    const imageHash = blockchainImageHash;
+    console.log("🔍 Blockchain image hash for event details:", title, "->", blockchainImageHash || "NONE");
     
     if (imageHash && imageHash !== "") {
       // Use the most reliable IPFS gateway first  
