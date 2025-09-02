@@ -69,6 +69,7 @@ describe("Organizer Functions - Validation Tests", () => {
         Cl.uint(1750000000),
         Cl.uint(1000000),
         Cl.uint(100),
+        Cl.stringUtf8(""),
       ],
       org1
     );
@@ -82,6 +83,7 @@ describe("Organizer Functions - Validation Tests", () => {
         Cl.uint(1750000001),
         Cl.uint(2000000),
         Cl.uint(200),
+        Cl.stringUtf8(""),
       ],
       org1
     );
@@ -96,6 +98,7 @@ describe("Organizer Functions - Validation Tests", () => {
         Cl.uint(1750000002),
         Cl.uint(1500000),
         Cl.uint(150),
+        Cl.stringUtf8(""),
       ],
       org2
     );

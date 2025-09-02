@@ -50,6 +50,7 @@ describe("EventChain Contract", () => {
         Cl.uint(1750000000), // timestamp
         Cl.uint(1000000), // price in microSTX
         Cl.uint(100), // total tickets
+        Cl.stringUtf8(""),
       ],
       deployer
     );
@@ -75,6 +76,7 @@ describe("EventChain Contract", () => {
         Cl.uint(1750000000),
         Cl.uint(1000000),
         Cl.uint(100),
+        Cl.stringUtf8(""),
       ],
       deployer
     );
@@ -120,6 +122,7 @@ describe("EventChain Contract", () => {
         Cl.uint(1750000000), // timestamp
         Cl.uint(1000000), // price in microSTX
         Cl.uint(100), // total tickets
+        Cl.stringUtf8(""),
       ],
       deployer
     );
@@ -161,6 +164,7 @@ describe("EventChain Contract", () => {
         Cl.uint(1750000000),
         Cl.uint(1_000_000),
         Cl.uint(10),
+        Cl.stringUtf8(""),
       ],
       organizer
     );
@@ -188,6 +192,7 @@ describe("EventChain Contract", () => {
         Cl.uint(1750000000),
         Cl.uint(1_000_000),
         Cl.uint(10),
+        Cl.stringUtf8(""),
       ],
       organizer
     );
@@ -219,6 +224,7 @@ describe("EventChain Contract", () => {
         Cl.uint(1750000000),
         Cl.uint(1_000_000),
         Cl.uint(10),
+        Cl.stringUtf8(""),
       ],
       organizer
     );
@@ -252,6 +258,7 @@ describe("EventChain Contract", () => {
         Cl.uint(1750000000),
         Cl.uint(1_000_000),
         Cl.uint(10),
+        Cl.stringUtf8(""),
       ],
       organizer
     );
@@ -307,6 +314,7 @@ describe("EventChain - Edge Case Tests", () => {
         Cl.uint(1750000000),
         Cl.uint(1_000_000),
         Cl.uint(10),
+        Cl.stringUtf8(""),
       ],
       organizer
     );
@@ -344,6 +352,7 @@ describe("EventChain - Edge Case Tests", () => {
         Cl.uint(1750000000),
         Cl.uint(1_000_000),
         Cl.uint(10),
+        Cl.stringUtf8(""),
       ],
       organizer
     );
@@ -389,6 +398,7 @@ describe("EventChain - Edge Case Tests", () => {
         Cl.uint(1750000000),
         Cl.uint(1_000_000),
         Cl.uint(10),
+        Cl.stringUtf8(""),
       ],
       organizer
     );
@@ -426,6 +436,7 @@ describe("EventChain - Edge Case Tests", () => {
         Cl.uint(1750000000),
         Cl.uint(1_000_000),
         Cl.uint(10),
+        Cl.stringUtf8(""),
       ],
       organizer
     );
@@ -473,6 +484,7 @@ describe("EventChain - Edge Case Tests", () => {
         Cl.uint(1750000000),
         Cl.uint(1_000_000),
         Cl.uint(10),
+        Cl.stringUtf8(""),
       ],
       stranger // not an approved organizer
     );
@@ -506,6 +518,7 @@ describe("EventChain - Edge Case Tests", () => {
         Cl.uint(1750000000),
         Cl.uint(1_000_000),
         Cl.uint(10),
+        Cl.stringUtf8(""),
       ],
       organizer
     );
@@ -540,6 +553,7 @@ describe("EventChain - Edge Case Tests", () => {
         Cl.uint(1750000000),
         Cl.uint(1_000_000),
         Cl.uint(10),
+        Cl.stringUtf8(""),
       ],
       organizer
     );
@@ -636,6 +650,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(1_000_000),
           Cl.uint(10),
+          Cl.stringUtf8(""),
         ],
         isolatedOrganizer
       );
@@ -679,6 +694,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(1_000_000),
           Cl.uint(10),
+          Cl.stringUtf8(""),
         ],
         isolatedOrganizer
       );
@@ -692,6 +708,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(2_000_000),
           Cl.uint(20),
+          Cl.stringUtf8(""),
         ],
         isolatedOrganizer
       );
@@ -705,6 +722,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(500_000),
           Cl.uint(5),
+          Cl.stringUtf8(""),
         ],
         isolatedOrganizer
       );
@@ -784,6 +802,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(1_000_000),
           Cl.uint(10),
+          Cl.stringUtf8(""),
         ],
         isolatedOrganizer
       );
@@ -826,6 +845,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(1_000_000),
           Cl.uint(10),
+          Cl.stringUtf8(""),
         ],
         isolatedOrganizer
       );
@@ -839,6 +859,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(2_000_000),
           Cl.uint(20),
+          Cl.stringUtf8(""),
         ],
         isolatedOrganizer
       );
@@ -906,6 +927,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(1_000_000),
           Cl.uint(10),
+          Cl.stringUtf8(""),
         ],
         organizer1
       );
@@ -919,6 +941,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(2_000_000),
           Cl.uint(20),
+          Cl.stringUtf8(""),
         ],
         organizer1
       );
@@ -933,6 +956,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(500_000),
           Cl.uint(5),
+          Cl.stringUtf8(""),
         ],
         organizer2
       );
@@ -1010,6 +1034,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(1_000_000),
           Cl.uint(10),
+          Cl.stringUtf8(""),
         ],
         firstOrg
       );
@@ -1032,6 +1057,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(2_000_000),
           Cl.uint(20),
+          Cl.stringUtf8(""),
         ],
         secondOrg
       );
@@ -1046,6 +1072,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(500_000),
           Cl.uint(5),
+          Cl.stringUtf8(""),
         ],
         firstOrg
       );
@@ -1121,6 +1148,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
             Cl.uint(1750000000),
             Cl.uint(1_000_000),
             Cl.uint(10),
+            Cl.stringUtf8(""),
           ],
           foldTestOrg
         );
@@ -1172,6 +1200,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
           Cl.uint(1750000000),
           Cl.uint(1_000_000),
           Cl.uint(10),
+          Cl.stringUtf8(""),
         ],
         cancelTestOrg
       );
