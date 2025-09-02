@@ -1,8 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EventChain UI
+
+A decentralized event ticketing platform built on the Stacks blockchain. EventChain provides secure, transparent, and blockchain-powered event management with features for both event organizers and attendees.
+
+## Features
+
+### For Attendees
+
+- Browse and search events across categories
+- Purchase tickets with secure blockchain transactions
+- View and manage purchased tickets
+- QR code ticket verification
+- IPFS-based image storage for events
+
+### For Organizers
+
+- Create and manage events
+- Set ticket pricing and availability
+- Track event analytics and attendance
+- Verify tickets through QR code scanning
+- Manage organizer permissions
+
+## Tech Stack
+
+- **Frontend**: Next.js 14 with TypeScript
+- **Blockchain**: Stacks network integration
+- **UI Components**: Radix UI with Tailwind CSS
+- **State Management**: React Context
+- **Storage**: IPFS via Pinata for images
+- **Authentication**: Stacks wallet connection
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- A Stacks wallet (Hiro Wallet recommended)
+- Access to Stacks testnet/mainnet
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone <https://github.com/BiliqisO/Stacks-project.git
+cd eventchain-ui
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
+
+3. Start the development server:
 
 ```bash
 npm run dev
@@ -10,27 +64,51 @@ npm run dev
 yarn dev
 # or
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/                    # Next.js app router pages
+│   ├── organizer/         # Organizer dashboard and management
+│   ├── event/[id]/        # Individual event pages
+│   ├── my-events/         # User's created events
+│   ├── my-tickets/        # User's purchased tickets
+│   └── check-in/          # Ticket verification
+├── components/            # Reusable UI components
+│   ├── ui/               # Base UI components (Radix)
+│   ├── navigation/       # Navigation components
+│   └── wallet-connect.tsx # Stacks wallet integration
+├── contexts/             # React contexts
+├── hooks/                # Custom React hooks
+└── lib/                  # Utility functions and blockchain config
+```
 
-## Learn More
+## Available Scripts
 
-To learn more about Next.js, take a look at the following resources:
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Blockchain Integration
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+EventChain integrates with the Stacks blockchain for:
 
-## Deploy on Vercel
+- Event creation and management
+- Ticket purchasing and ownership verification
+- Organizer permission management
+- Decentralized data storage
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The application uses Clarinet SDK for blockchain interactions and supports both testnet and mainnet deployments.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
