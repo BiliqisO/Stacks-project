@@ -19,12 +19,6 @@ const getCoreApiUrl = () => {
 
 async function callContractWithRequest(options: any) {
   try {
-    console.log("=== Contract Call Debug ===");
-    console.log("functionName:", options.functionName);
-    console.log("functionArgs:", options.functionArgs);
-    console.log("Contract:", `${options.contractAddress}.${options.contractName}`);
-    console.log("Network:", options.network?.chainId === 2147483648 ? "testnet" : "mainnet");
-
     const response = await request("stx_callContract", {
       contract:
         `${options.contractAddress}.${options.contractName}` as `${string}.${string}`,
@@ -141,16 +135,6 @@ export const createEvent = async (
   if (typeof window !== "undefined") {
     console.log("Window object available");
     console.log("StacksProvider available:", !!(window as any).StacksProvider);
-    console.log(
-      "LeatherProvider available:",
-      !!(window as any).LeatherProvider
-    );
-    console.log(
-      "All window properties with 'provider':",
-      Object.keys(window).filter((key) =>
-        key.toLowerCase().includes("provider")
-      )
-    );
 
     if ((window as any).LeatherProvider) {
       console.log("Leather wallet detected");
@@ -173,11 +157,10 @@ export const createEvent = async (
   }
 };
 
-// NEW: Get ticket info by ticket ID
 export const getTicketInfo = async (ticketId: number) => {
   try {
     console.log("Getting ticket info for ID:", ticketId);
-    
+
     const result = await Tx.fetchCallReadOnlyFunction({
       contractAddress: STACKS_CONFIG.contractAddress,
       contractName: STACKS_CONFIG.contractName,
@@ -186,7 +169,7 @@ export const getTicketInfo = async (ticketId: number) => {
       network: STACKS_CONFIG.network,
       senderAddress: STACKS_CONFIG.contractAddress,
     });
-    
+
     console.log("Ticket info result:", result);
     return result;
   } catch (error) {
@@ -195,11 +178,10 @@ export const getTicketInfo = async (ticketId: number) => {
   }
 };
 
-// NEW: Check if ticket ID is valid
 export const isTicketValid = async (ticketId: number) => {
   try {
     console.log("Checking if ticket ID is valid:", ticketId);
-    
+
     const result = await Tx.fetchCallReadOnlyFunction({
       contractAddress: STACKS_CONFIG.contractAddress,
       contractName: STACKS_CONFIG.contractName,
@@ -208,7 +190,7 @@ export const isTicketValid = async (ticketId: number) => {
       network: STACKS_CONFIG.network,
       senderAddress: STACKS_CONFIG.contractAddress,
     });
-    
+
     console.log("Ticket validity result:", result);
     return result;
   } catch (error) {
@@ -265,7 +247,7 @@ export const buyTicket = async (
       console.log("Transaction ID:", data.txId);
       alert(`Ticket purchase successful! Transaction ID: ${data.txId}`);
       // Refresh the page to show the new ticket
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         setTimeout(() => window.location.reload(), 2000);
       }
     },
@@ -276,29 +258,34 @@ export const buyTicket = async (
   };
 
   try {
-    console.log("🔄 Using direct request method to avoid post-condition issues");
-    
-    // Use direct request method which should bypass automatic post-conditions
+    console.log(
+      "🔄 Using direct request method to avoid post-condition issues"
+    );
+
     const response = await request("stx_callContract", {
-      contract: `${STACKS_CONFIG.contractAddress}.${STACKS_CONFIG.contractName}` as `${string}.${string}`,
+      contract:
+        `${STACKS_CONFIG.contractAddress}.${STACKS_CONFIG.contractName}` as `${string}.${string}`,
       functionName: "buy-ticket",
       functionArgs: functionArgs,
-      network: STACKS_CONFIG.network?.chainId === 2147483648 ? "testnet" : "mainnet",
+      network:
+        STACKS_CONFIG.network?.chainId === 2147483648 ? "testnet" : "mainnet",
       postConditionMode: "allow", // Explicitly set to allow mode
     });
 
     console.log("✅ Buy ticket transaction submitted:", response);
-    alert(`Ticket purchase initiated! Transaction ID: ${response}\n\nNote: In the improved contract, this will return your Ticket ID for easy check-in.`);
-    
+    alert(
+      `Ticket purchase initiated! Transaction ID: ${response}\n\nNote: In the improved contract, this will return your Ticket ID for easy check-in.`
+    );
+
     // Refresh the page to show the new ticket
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       setTimeout(() => window.location.reload(), 2000);
     }
-    
+
     return response;
   } catch (error) {
     console.error("❌ Direct request method failed, trying fallback:", error);
-    
+
     // Fallback to the wrapper function
     console.log("Calling buy-ticket with options:", options);
     await callContractWithRequest(options);
@@ -323,13 +310,12 @@ export const transferTicket = async (eventId: number, toAddress: string) => {
   await callContractWithRequest(options);
 };
 
-// NEW: Check-in by Ticket ID (for practical event management)
 export const checkInByTicketId = async (ticketId: number) => {
   console.log("=== Check-in by Ticket ID ===");
   console.log("Ticket ID:", ticketId);
   console.log("Contract Address:", STACKS_CONFIG.contractAddress);
   console.log("Contract Name:", STACKS_CONFIG.contractName);
-  
+
   // First, let's verify the ticket exists and get its details
   try {
     console.log("Checking if ticket ID exists...");
@@ -342,11 +328,10 @@ export const checkInByTicketId = async (ticketId: number) => {
       senderAddress: STACKS_CONFIG.contractAddress,
     });
     console.log("Ticket info:", ticketInfoResult);
-    
   } catch (debugError) {
     console.error("Debug error:", debugError);
   }
-  
+
   const functionArgs = [Tx.uintCV(ticketId)];
   console.log("Function Args:", functionArgs);
 
@@ -365,20 +350,19 @@ export const checkInByTicketId = async (ticketId: number) => {
       throw new Error("Check-in cancelled by user");
     },
   };
-  
+
   console.log("About to call contract with options:", options);
 
   await callContractWithRequest(options);
 };
 
-// EXISTING: Check-in by Address (kept for backward compatibility)
 export const checkInTicket = async (eventId: number, userAddress: string) => {
   console.log("=== Check-in Ticket Debug ===");
   console.log("Event ID:", eventId);
   console.log("User Address:", userAddress);
   console.log("Contract Address:", STACKS_CONFIG.contractAddress);
   console.log("Contract Name:", STACKS_CONFIG.contractName);
-  
+
   // First, let's verify the event exists and get its details
   try {
     console.log("Checking if event exists...");
@@ -391,7 +375,7 @@ export const checkInTicket = async (eventId: number, userAddress: string) => {
       senderAddress: userAddress,
     });
     console.log("Event data:", eventResult);
-    
+
     // Check if user has a ticket
     console.log("Checking if user has ticket...");
     const ticketResult = await Tx.fetchCallReadOnlyFunction({
@@ -403,11 +387,10 @@ export const checkInTicket = async (eventId: number, userAddress: string) => {
       senderAddress: userAddress,
     });
     console.log("Ticket data:", ticketResult);
-    
   } catch (debugError) {
     console.error("Debug error:", debugError);
   }
-  
+
   const functionArgs = [Tx.uintCV(eventId), Tx.principalCV(userAddress)];
   console.log("Function Args:", functionArgs);
 
@@ -426,7 +409,7 @@ export const checkInTicket = async (eventId: number, userAddress: string) => {
       throw new Error("Check-in cancelled by user");
     },
   };
-  
+
   console.log("About to call contract with options:", options);
 
   await callContractWithRequest(options);
@@ -942,7 +925,13 @@ export const readEvents = async () => {
 
 export const readOrganizerStatus = async (organizerAddress: string) => {
   try {
-    console.log("Checking organizer status for address:", organizerAddress);
+    console.log("=== Checking Organizer Status ===");
+    console.log("Address:", organizerAddress);
+    console.log(
+      "Contract:",
+      `${STACKS_CONFIG.contractAddress}.${STACKS_CONFIG.contractName}`
+    );
+    console.log("Network:", STACKS_CONFIG.network);
 
     // Use the fetchCallReadOnlyFunction from @stacks/transactions for proper serialization
     const result = await Tx.fetchCallReadOnlyFunction({
@@ -954,7 +943,9 @@ export const readOrganizerStatus = async (organizerAddress: string) => {
       senderAddress: organizerAddress,
     });
 
-    console.log("Organizer status response for", organizerAddress, ":", result);
+    console.log("Raw organizer status response:", result);
+    console.log("Response type:", typeof result);
+    console.log("Response structure:", JSON.stringify(result, null, 2));
 
     // Handle different possible return types from the contract
     if (typeof result === "boolean") {
@@ -1251,7 +1242,10 @@ export const readUserTickets = async (userAddress: string) => {
             senderAddress: userAddress,
           });
 
-          console.log(`Ticket result for user ${userAddress} and event ${event.id}:`, ticketResult);
+          console.log(
+            `Ticket result for user ${userAddress} and event ${event.id}:`,
+            ticketResult
+          );
 
           // Check if ticket exists (not none)
           let hasTicket = false;
@@ -1261,14 +1255,18 @@ export const readUserTickets = async (userAddress: string) => {
             // Parse the ticket data
             if (typeof ticketResult === "object") {
               const resultAny = ticketResult as any;
-              
+
               // Handle optional type response
               if (resultAny.type === "some" && resultAny.value) {
                 hasTicket = true;
                 const ticketData = resultAny.value;
-                
+
                 // Check if the ticket has been used (checked in)
-                if (ticketData && ticketData.type === "tuple" && ticketData.value) {
+                if (
+                  ticketData &&
+                  ticketData.type === "tuple" &&
+                  ticketData.value
+                ) {
                   const tupleData = ticketData.value;
                   if (tupleData.used && tupleData.used.type === "bool") {
                     isCheckedIn = tupleData.used.value === true;
@@ -1285,11 +1283,13 @@ export const readUserTickets = async (userAddress: string) => {
           }
 
           if (hasTicket) {
-            console.log(`User has ticket for event ${event.id}, checked in: ${isCheckedIn}`);
+            console.log(
+              `User has ticket for event ${event.id}, checked in: ${isCheckedIn}`
+            );
             userTickets.push({
               ...event,
               isCheckedIn,
-              status: isCheckedIn ? "used" : "active"
+              status: isCheckedIn ? "used" : "active",
             });
           }
         } catch (error) {
@@ -1311,17 +1311,17 @@ export const readUserTickets = async (userAddress: string) => {
 export const readUserTransferHistory = async (userAddress: string) => {
   try {
     console.log("Fetching transfer history for user:", userAddress);
-    
+
     // This is a simplified version - in a real implementation, you'd want to
     // query blockchain events or maintain a transfer history in the contract
     const userTickets = await readUserTickets(userAddress);
-    
+
     const history = userTickets.map((ticket) => {
       const eventData = ticket.result as any;
       const eventName = eventData.name || `Event ${ticket.id}`;
       const timestamp = eventData.timestamp || Math.floor(Date.now() / 1000);
-      const date = new Date(timestamp * 1000).toISOString().split('T')[0];
-      
+      const date = new Date(timestamp * 1000).toISOString().split("T")[0];
+
       return {
         id: ticket.id,
         eventTitle: eventName,
@@ -1329,7 +1329,7 @@ export const readUserTransferHistory = async (userAddress: string) => {
         from: "Contract",
         to: userAddress,
         date,
-        txHash: `0x${ticket.id.toString(16).padStart(64, '0')}`, // Simplified hash
+        txHash: `0x${ticket.id.toString(16).padStart(64, "0")}`, // Simplified hash
       };
     });
 

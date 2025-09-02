@@ -24,6 +24,7 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
   const checkOrganizerStatus = async () => {
     if (!address || !isSignedIn) {
+      console.log("No address or not signed in, defaulting to attendee mode");
       setIsOrganizer(false);
       setIsLoading(false);
       return;
@@ -31,16 +32,31 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
     try {
       setIsLoading(true);
+      console.log("=== Mode Context: Checking Organizer Status ===");
+      console.log("User address:", address);
+      console.log("Is signed in:", isSignedIn);
+      
       const organizerStatus = await readOrganizerStatus(address);
+      console.log("Organizer status result:", organizerStatus);
+      
       setIsOrganizer(organizerStatus);
       
       // Auto-switch to organizer mode if user is an organizer
       if (organizerStatus && mode === "attendee") {
+        console.log("Auto-switching to organizer mode");
         setMode("organizer");
+      } else if (!organizerStatus && mode === "organizer") {
+        console.log("User is not organizer, switching back to attendee mode");
+        setMode("attendee");
       }
     } catch (error) {
       console.error("Error checking organizer status:", error);
+      console.error("Error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
       setIsOrganizer(false);
+      setMode("attendee");
     } finally {
       setIsLoading(false);
     }

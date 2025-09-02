@@ -18,28 +18,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from "next/link";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  createEvent,
   readOrganizerStatus,
   addOrganizer,
   readOrganizerEvents,
@@ -64,21 +46,7 @@ interface Event {
 export default function OrganizerPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const { isSignedIn, address } = useStacks();
-  const [newEvent, setNewEvent] = useState({
-    title: "",
-    description: "",
-    date: "",
-    time: "",
-    location: "",
-    price: "",
-    category: "",
-    maxTickets: "",
-    image: null as File | null,
-  });
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Function to fetch events from blockchain
   const fetchEvents = async () => {
@@ -185,134 +153,6 @@ export default function OrganizerPage() {
     }
   }, [isSignedIn, address]);
 
-  const handleCreateEvent = async () => {
-    if (!isSignedIn) {
-      alert("Please connect your Stacks wallet first");
-      return;
-    }
-
-    setIsCreating(true);
-    try {
-      console.log("=== USER ADDRESS DEBUG ===");
-      console.log("Address from useStacks:", address);
-      if (!address) {
-        alert(
-          "Could not get your wallet address. Please reconnect your wallet."
-        );
-        setIsCreating(false);
-        return;
-      }
-
-      console.log("Checking organizer status for:", address);
-
-      const isOrganizer = await readOrganizerStatus(address);
-      console.log("Is organizer:", isOrganizer);
-
-      if (!isOrganizer) {
-        const shouldBecomeOrganizer = confirm(
-          "You need to be registered as an organizer to create events. Would you like to register now? This will require a transaction."
-        );
-
-        if (!shouldBecomeOrganizer) {
-          setIsCreating(false);
-          return;
-        }
-
-        console.log("Adding user as organizer...");
-        await addOrganizer(address);
-
-        console.log("Waiting for transaction to confirm...");
-        // Wait a bit for the transaction to potentially confirm
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        // Check again if user is now an organizer
-        console.log("Re-checking organizer status after registration...");
-        const isOrganizerAfterRegistration = await readOrganizerStatus(address);
-        
-        if (isOrganizerAfterRegistration) {
-          console.log("✅ Organizer status confirmed! Continuing with event creation...");
-          // Continue with event creation - don't return here
-        } else {
-          console.log("⚠️ Organizer status not yet confirmed, but transaction was submitted");
-          alert(
-            "Organizer registration submitted! The transaction may still be confirming. Please wait a moment and try creating the event again."
-          );
-          setIsCreating(false);
-          return;
-        }
-      }
-
-      const timestamp = Math.floor(
-        new Date(`${newEvent.date}T${newEvent.time}`).getTime() / 1000
-      );
-
-      const priceInMicroSTX = Math.floor(
-        Number.parseFloat(newEvent.price) * 1000000
-      );
-
-      console.log("Creating event with parameters:", {
-        name: newEvent.title,
-        location: newEvent.location,
-        timestamp,
-        priceInMicroSTX,
-        totalTickets: Number.parseInt(newEvent.maxTickets),
-      });
-
-      // Call the smart contract function
-      await createEvent(
-        newEvent.title,
-        newEvent.location,
-        timestamp,
-        priceInMicroSTX,
-        Number.parseInt(newEvent.maxTickets)
-      );
-
-      // Store event description and other metadata locally
-      // We need to determine the event ID that will be created
-      // For now, we'll store based on a combination of title, location, and timestamp
-      const eventKey = `${newEvent.title}-${newEvent.location}-${timestamp}`;
-      const eventMetadata = {
-        description: newEvent.description,
-        category: newEvent.category,
-        image: imagePreview,
-      };
-      
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`event-metadata-${eventKey}`, JSON.stringify(eventMetadata));
-      }
-
-      // Refresh events from blockchain after successful creation
-      setTimeout(() => {
-        fetchEvents(); // Refresh the events list from blockchain
-      }, 2000); // Wait 2 seconds for potential blockchain confirmation
-
-      setNewEvent({
-        title: "",
-        description: "",
-        date: "",
-        time: "",
-        location: "",
-        price: "",
-        category: "",
-        maxTickets: "",
-        image: null,
-      });
-      setImagePreview(null);
-      setIsCreateDialogOpen(false);
-      alert(
-        "Event creation transaction submitted! Please check your wallet and wait for confirmation."
-      );
-    } catch (error) {
-      console.error("Event creation failed:", error);
-      alert(
-        `Event creation failed: ${
-          error instanceof Error ? error.message : "Please try again."
-        }`
-      );
-    } finally {
-      setIsCreating(false);
-    }
-  };
 
   const handleCheckOrganizerStatus = async () => {
     if (!isSignedIn) {
@@ -394,181 +234,12 @@ export default function OrganizerPage() {
                   Check Organizer Status
                 </Button>
               )}
-              <Dialog
-                open={isCreateDialogOpen}
-                onOpenChange={setIsCreateDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <Button disabled={!isSignedIn}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {isSignedIn ? "Create Event" : "Connect Wallet"}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Create New Event</DialogTitle>
-                    <DialogDescription>
-                      Fill in the details to create a new event on the Stacks
-                      blockchain
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Event Title</Label>
-                      <Input
-                        id="title"
-                        value={newEvent.title}
-                        onChange={(e) =>
-                          setNewEvent({ ...newEvent, title: e.target.value })
-                        }
-                        placeholder="Enter event title"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Category</Label>
-                      <Select
-                        value={newEvent.category}
-                        onValueChange={(value) =>
-                          setNewEvent({ ...newEvent, category: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="technology">Technology</SelectItem>
-                          <SelectItem value="art">Art</SelectItem>
-                          <SelectItem value="finance">Finance</SelectItem>
-                          <SelectItem value="music">Music</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={newEvent.description}
-                        onChange={(e) =>
-                          setNewEvent({
-                            ...newEvent,
-                            description: e.target.value,
-                          })
-                        }
-                        placeholder="Describe your event"
-                        rows={3}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="date">Date</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={newEvent.date}
-                        onChange={(e) =>
-                          setNewEvent({ ...newEvent, date: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="time">Time</Label>
-                      <Input
-                        id="time"
-                        type="time"
-                        value={newEvent.time}
-                        onChange={(e) =>
-                          setNewEvent({ ...newEvent, time: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location</Label>
-                      <Input
-                        id="location"
-                        value={newEvent.location}
-                        onChange={(e) =>
-                          setNewEvent({ ...newEvent, location: e.target.value })
-                        }
-                        placeholder="Event location"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="price">Ticket Price (STX)</Label>
-                      <Input
-                        id="price"
-                        value={newEvent.price}
-                        onChange={(e) =>
-                          setNewEvent({ ...newEvent, price: e.target.value })
-                        }
-                        placeholder="0.5"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="maxTickets">Maximum Tickets</Label>
-                      <Input
-                        id="maxTickets"
-                        type="number"
-                        value={newEvent.maxTickets}
-                        onChange={(e) =>
-                          setNewEvent({
-                            ...newEvent,
-                            maxTickets: e.target.value,
-                          })
-                        }
-                        placeholder="500"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="image">Event Image</Label>
-                      <Input
-                        id="image"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0] || null;
-                          setNewEvent({ ...newEvent, image: file });
-                          
-                          // Create preview URL
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                              setImagePreview(e.target?.result as string);
-                            };
-                            reader.readAsDataURL(file);
-                          } else {
-                            setImagePreview(null);
-                          }
-                        }}
-                      />
-                      {imagePreview && (
-                        <div className="mt-2">
-                          <img
-                            src={imagePreview}
-                            alt="Event preview"
-                            className="h-24 w-24 object-cover rounded-md border"
-                          />
-                        </div>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        Note: Images are stored locally and not on the blockchain
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex justify-end space-x-2 mt-6">
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsCreateDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleCreateEvent}
-                      disabled={isCreating}
-                    >
-                      {isCreating ? "Creating..." : "Create Event"}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <Link href="/organizer/create">
+                <Button disabled={!isSignedIn}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {isSignedIn ? "Create Event" : "Connect Wallet"}
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useState } from "react";
-import { Search, Filter, Calendar, MapPin, Users } from "lucide-react";
+import { Search, Filter, Calendar, MapPin, Users, Shield } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,14 @@ export default function HomePage() {
             Secure, transparent, and blockchain-powered event management on
             Stacks
           </p>
+          <div className="flex justify-center mb-6">
+            <Link href="/admin">
+              <Button variant="outline" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Admin Dashboard
+              </Button>
+            </Link>
+          </div>
           <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
