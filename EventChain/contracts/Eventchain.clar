@@ -16,6 +16,7 @@
 (define-constant ERR-TICKET-USED u201)                 ;; Cannot transfer a used ticket
 (define-constant ERR-NO-TICKET u202)                   ;; User does not own a ticket for this event
 (define-constant ERR-TRANSFER-FAILED u203)             ;; Ticket transfer operation failed
+(define-constant ERR-INVALID-RECIPIENT u204)           ;; Cannot transfer ticket to yourself
 
 ;; 300-399: Check-in Errors
 (define-constant ERR-TICKET-ALREADY-USED u301)         ;; Ticket has already been used for check-in
@@ -87,7 +88,18 @@
 )
 
 
-;; ---- Event Creation ----
+;; =============================================================================
+;; EVENT CREATION - Create a new event
+;; =============================================================================
+;; @desc: Create a new event with specified details (only approved organizers can create events)
+;; @param: name - Event name (cannot be empty)
+;; @param: location - Event location (cannot be empty) 
+;; @param: timestamp - When the event occurs (must be in the future)
+;; @param: price - Price per ticket (can be 0 for free events)
+;; @param: total-tickets - Total number of tickets available (must be > 0)
+;; @param: image - URL/path to event image (optional, can be empty)
+;; @returns: (ok event-id) on success, (err error-code) on failure
+
 (define-public (create-event
     (name (string-utf8 100))
     (location (string-utf8 100))
@@ -97,16 +109,17 @@
     (image (string-utf8 100))
   )
   (begin
-    ;; Validate organizer authorization
+    ;; Validate organizer authorization first
     (asserts! (is-some (map-get? organizers {organizer: tx-sender})) (err ERR-NOT-ORGANIZER))
     
-    ;; Validate input parameters to prevent untrusted input issues
-    (asserts! (> (len name) u0) (err ERR-INVALID-INPUT)) ;; Name cannot be empty
-    (asserts! (> (len location) u0) (err ERR-INVALID-INPUT)) ;; Location cannot be empty
-    (asserts! (> timestamp stacks-block-height) (err ERR-INVALID-TIMESTAMP)) ;; Event must be in the future
-    (asserts! (> total-tickets u0) (err ERR-INVALID-TICKET-COUNT)) ;; Must have at least 1 ticket
-    ;; NB:: price can be 0 for free events, so no validation needed
+    ;; Validate all input parameters to prevent untrusted input
+    (asserts! (> (len name) u0) (err ERR-INVALID-INPUT))
+    (asserts! (> (len location) u0) (err ERR-INVALID-INPUT))
+    (asserts! (> timestamp stacks-block-height) (err ERR-INVALID-TIMESTAMP))
+    (asserts! (> total-tickets u0) (err ERR-INVALID-TICKET-COUNT))
+    ;; NB: price can be 0 for free events, so no validation needed
     
+    ;; Create the event record
     (let ((event-id (var-get next-event-id)))
       (map-set events
         (tuple (event-id event-id))
@@ -120,8 +133,15 @@
           (tickets-sold u0)
           (created-timestamp stacks-block-height)
           (image image)))
+      
+      ;; Increment event counter
       (var-set next-event-id (+ event-id u1))
-      (ok event-id))))
+      
+      ;; Return the new event ID
+      (ok event-id)
+    )
+  )
+)
 
 
 ;; =============================================================================
@@ -173,25 +193,44 @@
 )
 
 
-;; ----  Ticket Transfer ----
-(define-public (transfer-ticket (event-id uint) (to principal))
-  (match (map-get? tickets (tuple (event-id event-id) (owner tx-sender)))
-    ticket-data
+;; =============================================================================
+;; TICKET TRANSFER - Transfer a ticket to another user
+;; =============================================================================
+;; @desc: Transfer ownership of a ticket to another user (ticket must be unused)
+;; @param: event-id - The ID of the event 
+;; @param: to - The principal address to transfer the ticket to
+;; @returns: (ok true) on successful transfer, (err error-code) on failure
+
+(define-public (transfer-ticket (event-id uint) (recipient principal))
+  ;; Get ticket data and validate user owns the ticket
+  (let ((ticket-data (unwrap! (map-get? tickets (tuple (event-id event-id) (owner tx-sender)))
+                               (err ERR-NO-TICKET))))
+    
+    ;; Extract ticket details
     (let ((ticket-id (get ticket-id ticket-data)))
-      (asserts! (not (get used ticket-data)) (err ERR-TICKET-USED))
-     
-      (map-delete tickets (tuple (event-id event-id) (owner tx-sender)))
-      (map-set tickets (tuple (event-id event-id) (owner to))
-        (tuple (used false) (ticket-id ticket-id)))
       
-      (match (map-get? ticket-owners {ticket-id: ticket-id})
-        ticket-owner-data
-        (begin
-          (map-set ticket-owners (tuple (ticket-id ticket-id))
-            (merge ticket-owner-data (tuple (owner to))))
-          (ok true))
-        (err ERR-TRANSFER-FAILED)))
-    (err ERR-NO-TICKET))
+      ;; Validate transfer conditions
+      (asserts! (not (get used ticket-data)) (err ERR-TICKET-USED))
+      (asserts! (not (is-eq tx-sender recipient)) (err ERR-INVALID-RECIPIENT))
+      
+      ;; Get ticket owner data for reverse mapping update
+      (let ((ticket-owner-data (unwrap! (map-get? ticket-owners {ticket-id: ticket-id})
+                                        (err ERR-TRANSFER-FAILED))))
+        
+        ;; Update primary ticket mapping - transfer ownership
+        (map-delete tickets (tuple (event-id event-id) (owner tx-sender)))
+        (map-set tickets (tuple (event-id event-id) (owner recipient))
+          (tuple (used false) (ticket-id ticket-id)))
+        
+        ;; Update reverse ticket mapping - change owner
+        (map-set ticket-owners (tuple (ticket-id ticket-id))
+          (merge ticket-owner-data (tuple (owner recipient))))
+        
+        ;; Return success
+        (ok true)
+      )
+    )
+  )
 )
 
 ;; ----  Check-In by Ticket ID ----
