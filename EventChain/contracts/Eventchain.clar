@@ -195,33 +195,49 @@
 )
 
 ;; ----  Check-In by Ticket ID ----
+;; =============================================================================
+;; CHECK-IN BY TICKET ID - Check in a ticket using its unique ID
+;; =============================================================================
+;; @desc: Check in a ticket using its unique ticket ID (only event creator can do this)
+;; @param: ticket-id - The unique ID of the ticket to check in
+;; @returns: (ok ticket-info) with attendee details on success, (err error-code) on failure
+
 (define-public (check-in-by-ticket-id (ticket-id uint))
-  (match (map-get? ticket-owners (tuple (ticket-id ticket-id)))
-    ticket-info
+  ;; Get ticket info and validate ticket exists
+  (let ((ticket-info (unwrap! (map-get? ticket-owners (tuple (ticket-id ticket-id)))
+                               (err ERR-TICKET-ID-NOT-FOUND))))
+    
+    ;; Extract ticket details
     (let (
-          (ticket-owner (get owner ticket-info))
-          (event-id (get event-id ticket-info))
-          (already-used (get used ticket-info))
-         )
-      (match (map-get? events (tuple (event-id event-id)))
-        event-data
-        (begin
-          (asserts! (is-eq tx-sender (get creator event-data)) (err ERR-NOT-EVENT-CREATOR)) ;; Check event creator
-          (asserts! (not already-used) (err ERR-TICKET-ALREADY-USED)) ;; Check ticket not already used
-          ;; Update both mappings
-          (map-set tickets (tuple (event-id event-id) (owner ticket-owner))
-            (tuple (used true) (ticket-id ticket-id)))
-          (map-set ticket-owners (tuple (ticket-id ticket-id))
-            (merge ticket-info (tuple (used true))))
-          ;; Return success with ticket owner info
-          (ok {
-            ticket-owner: ticket-owner,
-            event-id: event-id,
-            ticket-id: ticket-id}))
-        (err ERR-EVENT-NOT-FOUND-CHECKIN) ;; Event not found
+      (ticket-owner (get owner ticket-info))
+      (event-id (get event-id ticket-info))
+      (is-already-used (get used ticket-info))
+    )
+      ;; Get event data and validate event exists
+      (let ((event-data (unwrap! (map-get? events (tuple (event-id event-id)))
+                                 (err ERR-EVENT-NOT-FOUND-CHECKIN))))
+        
+        ;; Validate authorization - only event creator can check-in tickets
+        (asserts! (is-eq tx-sender (get creator event-data)) (err ERR-NOT-EVENT-CREATOR))
+        
+        ;; Validate ticket hasn't been used
+        (asserts! (not is-already-used) (err ERR-TICKET-ALREADY-USED))
+        
+        ;; Update both ticket mappings - mark as used
+        (map-set tickets (tuple (event-id event-id) (owner ticket-owner))
+          (tuple (used true) (ticket-id ticket-id)))
+        
+        (map-set ticket-owners (tuple (ticket-id ticket-id))
+          (merge ticket-info (tuple (used true))))
+        
+        ;; Return success with attendee information
+        (ok {
+          ticket-owner: ticket-owner,
+          event-id: event-id,
+          ticket-id: ticket-id
+        })
       )
     )
-    (err ERR-TICKET-ID-NOT-FOUND) ;; Ticket ID not found
   )
 )
 
