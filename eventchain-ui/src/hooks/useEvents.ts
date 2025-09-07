@@ -27,10 +27,9 @@ export const useEvents = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Test function to debug image data
+  // Test function to debug image data (BigInt-safe)
   const debugImageData = (blockchainEvent: any) => {
     console.log("🐛 === IMAGE DEBUG START ===");
-    console.log("🐛 Full blockchain event object:", JSON.stringify(blockchainEvent, null, 2));
     console.log("🐛 Event data structure:", blockchainEvent?.result);
     console.log("🐛 Event data type:", typeof blockchainEvent?.result);
     
@@ -41,6 +40,8 @@ export const useEvents = () => {
         const tupleData = blockchainEvent.result.value.value;
         console.log("🐛 Tuple fields:", Object.keys(tupleData || {}));
         console.log("🐛 Image field in tuple:", tupleData?.image);
+        console.log("🐛 Image field type:", typeof tupleData?.image);
+        console.log("🐛 Image field value:", tupleData?.image?.value);
       }
     }
     console.log("🐛 === IMAGE DEBUG END ===");
@@ -206,7 +207,7 @@ export const useEvents = () => {
     }
     
     return {
-      id: blockchainEvent.id || 0,
+    id: blockchainEvent.id ? blockchainEvent.id.toString() : "0",
       title,
       description,
       date,
