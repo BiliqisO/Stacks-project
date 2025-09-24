@@ -5,6 +5,7 @@ import { OrganizerNav } from "@/components/navigation/OrganizerNav";
 import { AttendeeNav } from "@/components/navigation/AttendeeNav";
 import { ModeSwitcher } from "@/components/ModeSwitcher";
 import { WalletConnect } from "@/components/WalletConnect";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { useState } from "react";
@@ -41,6 +42,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
           <div className="flex items-center space-x-4">
             <ModeSwitcher />
+            <ThemeToggle />
             <WalletConnect />
           </div>
         </div>
