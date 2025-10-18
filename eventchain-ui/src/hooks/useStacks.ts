@@ -9,40 +9,50 @@ export const useStacks = () => {
   const [isSignedIn, setIsSignedIn] = useState(false);
 
   useEffect(() => {
-    if (userSession.isSignInPending()) {
-      userSession.handlePendingSignIn().then((userData) => {
+    try {
+      if (userSession.isSignInPending()) {
+        userSession.handlePendingSignIn().then((userData) => {
+          setUserData(userData);
+          setIsSignedIn(true);
+        }).catch((error) => {
+          console.error('Error handling pending sign in:', error);
+        });
+      } else if (userSession.isUserSignedIn()) {
+        const userData = userSession.loadUserData();
         setUserData(userData);
         setIsSignedIn(true);
-      });
-    } else if (userSession.isUserSignedIn()) {
-      const userData = userSession.loadUserData();
-      setUserData(userData);
-      setIsSignedIn(true);
-    } else if (isConnected()) {
-      setIsSignedIn(true);
-      const data = getLocalStorage();
-      if (data?.addresses?.stx && data.addresses.stx.length > 0) {
-        setUserData({
-          profile: {
-            stxAddress: {
-              testnet: data.addresses.stx[0].address,
-              mainnet: data.addresses.stx[0].address,
+      } else if (isConnected()) {
+        setIsSignedIn(true);
+        const data = getLocalStorage();
+        if (data?.addresses?.stx && data.addresses.stx.length > 0) {
+          setUserData({
+            profile: {
+              stxAddress: {
+                testnet: data.addresses.stx[0].address,
+                mainnet: data.addresses.stx[0].address,
+              }
             }
-          }
-        });
+          });
+        }
       }
+    } catch (error) {
+      console.error('Error in useStacks effect:', error);
     }
   }, []);
 
   const getAddress = () => {
-    if (userData) {
-      return userData.profile.stxAddress.testnet;
-    }
-    if (isConnected()) {
-      const data = getLocalStorage();
-      if (data?.addresses?.stx && data.addresses.stx.length > 0) {
-        return data.addresses.stx[0].address;
+    try {
+      if (userData?.profile?.stxAddress?.testnet) {
+        return userData.profile.stxAddress.testnet;
       }
+      if (isConnected()) {
+        const data = getLocalStorage();
+        if (data?.addresses?.stx && data.addresses.stx.length > 0) {
+          return data.addresses.stx[0].address;
+        }
+      }
+    } catch (error) {
+      console.error('Error getting address:', error);
     }
     return null;
   };

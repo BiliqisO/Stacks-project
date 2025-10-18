@@ -1,0 +1,578 @@
+import { setupStacksMocks, cleanupStacksMocks } from '../../__tests__/utils/stacks-mocks'
+
+// Mock @stacks/connect - must be defined before import
+jest.mock('@stacks/connect', () => ({
+  connect: jest.fn(),
+  disconnect: jest.fn(),
+  isConnected: jest.fn(),
+  getLocalStorage: jest.fn(),
+  showConnect: jest.fn(),
+  request: jest.fn(),
+}))
+
+// Mock @stacks/transactions - must be defined before import
+jest.mock('@stacks/transactions', () => ({
+  fetchCallReadOnlyFunction: jest.fn(),
+  stringUtf8CV: jest.fn(),
+  uintCV: jest.fn(),
+  principalCV: jest.fn(),
+  makeSTXTokenTransfer: jest.fn(),
+  makeContractCall: jest.fn(),
+  broadcastTransaction: jest.fn(),
+}))
+
+// Import for accessing mocks
+import * as stacksConnect from '@stacks/connect'
+import * as stacksTransactions from '@stacks/transactions'
+
+// Get typed mocks
+const mockStacksConnect = jest.mocked(stacksConnect)
+const mockStacksTransactions = jest.mocked(stacksTransactions)
+
+// Now import the functions being tested
+import {
+  connectWallet,
+  disconnectWallet,
+  createEvent,
+  buyTicket,
+  readEvents,
+  readOrganizerStatus,
+  readAdminStatus,
+  readUserTickets,
+  testContractConnection,
+} from '../stacks-utils'
+
+// Mock userSession
+const mockUserSession = {
+  isUserSignedIn: jest.fn(),
+  loadUserData: jest.fn(),
+  isSignInPending: jest.fn(),
+  handlePendingSignIn: jest.fn(),
+  signUserOut: jest.fn(),
+}
+
+// Mock global alert and location
+global.alert = jest.fn()
+Object.defineProperty(window, 'location', {
+  value: { reload: jest.fn() },
+  writable: true,
+})
+
+describe('stacks-utils comprehensive tests', () => {
+  beforeAll(() => {
+    setupStacksMocks()
+  })
+
+  afterAll(() => {
+    cleanupStacksMocks()
+  })
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    jest.spyOn(console, 'log').mockImplementation()
+    jest.spyOn(console, 'error').mockImplementation()
+    jest.spyOn(console, 'warn').mockImplementation()
+
+    // Setup default mocks
+    mockStacksConnect.isConnected.mockReturnValue(true)
+    mockUserSession.isUserSignedIn.mockReturnValue(true)
+    mockUserSession.loadUserData.mockReturnValue({
+      profile: {
+        stxAddress: {
+          testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+          mainnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+        },
+      },
+    })
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  describe('connectWallet', () => {
+    it('successfully connects wallet', async () => {
+      mockStacksConnect.connect.mockResolvedValue(undefined)
+
+      await connectWallet()
+
+      expect(mockStacksConnect.connect).toHaveBeenCalledWith(
+        expect.objectContaining({
+          appDetails: {
+            name: 'EventChain',
+            icon: expect.stringContaining('logo.png'),
+          },
+        })
+      )
+    })
+
+    it('handles connection errors', async () => {
+      const error = new Error('Connection failed')
+      mockStacksConnect.connect.mockRejectedValue(error)
+
+      await connectWallet()
+
+      expect(console.error).toHaveBeenCalledWith('Connection failed:', error)
+    })
+  })
+
+  describe('disconnectWallet', () => {
+    it('disconnects wallet and signs out user', () => {
+      disconnectWallet()
+
+      expect(mockStacksConnect.disconnect).toHaveBeenCalled()
+      expect(mockUserSession.signUserOut).toHaveBeenCalledWith('/')
+    })
+  })
+
+  describe('createEvent', () => {
+    const eventData = {
+      name: 'Test Event',
+      location: 'Test Location',
+      timestamp: 1735689600,
+      price: 1000000,
+      totalTickets: 100,
+      image: 'QmTestHash',
+    }
+
+    it('creates event with all parameters', async () => {
+      mockStacksConnect.request.mockResolvedValue({ txid: 'mock-tx-id' })
+      mockStacksTransactions.stringUtf8CV.mockImplementation((val) => ({ type: 'string-utf8', value: val }))
+      mockStacksTransactions.uintCV.mockImplementation((val) => ({ type: 'uint', value: val }))
+
+      const result = await createEvent(
+        eventData.name,
+        eventData.location,
+        eventData.timestamp,
+        eventData.price,
+        eventData.totalTickets,
+        eventData.image
+      )
+
+      expect(mockStacksConnect.request).toHaveBeenCalledWith(
+        'stx_callContract',
+        expect.objectContaining({
+          functionName: 'create-event',
+          functionArgs: expect.arrayContaining([
+            { type: 'string-utf8', value: eventData.name },
+            { type: 'string-utf8', value: eventData.location },
+            { type: 'uint', value: eventData.timestamp },
+            { type: 'uint', value: eventData.price },
+            { type: 'uint', value: eventData.totalTickets },
+            { type: 'string-utf8', value: eventData.image },
+          ]),
+        })
+      )
+      expect(result).toBe('mock-tx-id')
+    })
+
+    it('uses empty string as default image', async () => {
+      mockStacksConnect.request.mockResolvedValue({ txid: 'mock-tx-id' })
+      mockStacksTransactions.stringUtf8CV.mockImplementation((val) => ({ type: 'string-utf8', value: val }))
+      mockStacksTransactions.uintCV.mockImplementation((val) => ({ type: 'uint', value: val }))
+
+      await createEvent(
+        eventData.name,
+        eventData.location,
+        eventData.timestamp,
+        eventData.price,
+        eventData.totalTickets
+      )
+
+      expect(mockStacksConnect.request).toHaveBeenCalledWith(
+        'stx_callContract',
+        expect.objectContaining({
+          functionArgs: expect.arrayContaining([
+            { type: 'string-utf8', value: '' },
+          ]),
+        })
+      )
+    })
+
+    it('throws error when user is not connected', async () => {
+      mockStacksConnect.isConnected.mockReturnValue(false)
+      mockUserSession.isUserSignedIn.mockReturnValue(false)
+
+      await expect(createEvent(
+        eventData.name,
+        eventData.location,
+        eventData.timestamp,
+        eventData.price,
+        eventData.totalTickets
+      )).rejects.toThrow('User is not connected')
+    })
+  })
+
+  describe('buyTicket', () => {
+    const ticketData = {
+      eventId: 1,
+      price: 1000000,
+      creatorAddress: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+    }
+
+    it('buys ticket successfully', async () => {
+      mockStacksConnect.request.mockResolvedValue({ txid: 'mock-tx-id' })
+      mockStacksTransactions.uintCV.mockImplementation((val) => ({ type: 'uint', value: val }))
+
+      const result = await buyTicket(
+        ticketData.eventId,
+        ticketData.price,
+        ticketData.creatorAddress
+      )
+
+      expect(mockStacksConnect.request).toHaveBeenCalledWith(
+        'stx_callContract',
+        expect.objectContaining({
+          functionName: 'buy-ticket',
+          functionArgs: [{ type: 'uint', value: ticketData.eventId }],
+          postConditionMode: 'allow',
+        })
+      )
+      expect(result).toBe('mock-tx-id')
+    })
+
+    it('shows success alert and schedules reload', async () => {
+      jest.useFakeTimers()
+      mockStacksConnect.request.mockResolvedValue({ txid: 'mock-tx-id' })
+      mockStacksTransactions.uintCV.mockImplementation((val) => ({ type: 'uint', value: val }))
+
+      await buyTicket(ticketData.eventId, ticketData.price, ticketData.creatorAddress)
+
+      expect(global.alert).toHaveBeenCalledWith(
+        expect.stringContaining('Ticket purchase initiated!')
+      )
+
+      jest.advanceTimersByTime(2000)
+      expect(window.location.reload).toHaveBeenCalled()
+      jest.useRealTimers()
+    })
+
+    it('throws error when user is not connected', async () => {
+      mockStacksConnect.isConnected.mockReturnValue(false)
+      mockUserSession.isUserSignedIn.mockReturnValue(false)
+
+      await expect(buyTicket(
+        ticketData.eventId,
+        ticketData.price,
+        ticketData.creatorAddress
+      )).rejects.toThrow('User is not connected')
+    })
+  })
+
+  describe('readEvents', () => {
+    it('reads events successfully', async () => {
+      const mockEventData = {
+        type: 'some',
+        value: {
+          type: 'tuple',
+          value: {
+            creator: { value: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' },
+            name: { value: 'Test Event' },
+            location: { value: 'Test Location' },
+            timestamp: { value: 1735689600 },
+            price: { value: 1000000 },
+            'total-tickets': { value: 100 },
+            'tickets-sold': { value: 25 },
+            image: { value: 'QmTestHash' },
+          },
+        },
+      }
+
+      mockStacksTransactions.fetchCallReadOnlyFunction
+        .mockResolvedValueOnce(5) // Total events count
+        .mockResolvedValueOnce(mockEventData) // Event data
+
+      const result = await readEvents()
+
+      expect(mockStacksTransactions.fetchCallReadOnlyFunction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          functionName: 'get-total-events',
+        })
+      )
+
+      expect(Array.isArray(result)).toBe(true)
+      expect(result).toHaveLength(1)
+      expect(result[0]).toHaveProperty('title', 'Test Event')
+      expect(result[0]).toHaveProperty('location', 'Test Location')
+    })
+
+    it('handles contract read errors', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockRejectedValue(new Error('Read failed'))
+
+      const result = await readEvents()
+
+      expect(result).toEqual([])
+      expect(console.error).toHaveBeenCalledWith('Error reading events:', expect.any(Error))
+    })
+
+    it('handles invalid total events count', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue(Number.MAX_SAFE_INTEGER)
+
+      const result = await readEvents()
+
+      expect(result).toEqual([])
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Total events count seems invalid'),
+        Number.MAX_SAFE_INTEGER
+      )
+    })
+  })
+
+  describe('readOrganizerStatus', () => {
+    const organizerAddress = 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+
+    it('returns true for valid organizer', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue(true)
+      mockStacksTransactions.principalCV.mockReturnValue({ type: 'principal', value: organizerAddress })
+
+      const result = await readOrganizerStatus(organizerAddress)
+
+      expect(result).toBe(true)
+      expect(mockStacksTransactions.fetchCallReadOnlyFunction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          functionName: 'is-organizer',
+          functionArgs: [{ type: 'principal', value: organizerAddress }],
+        })
+      )
+    })
+
+    it('returns false for non-organizer', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue(false)
+
+      const result = await readOrganizerStatus(organizerAddress)
+
+      expect(result).toBe(false)
+    })
+
+    it('handles boolean responses', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue(true)
+
+      const result = await readOrganizerStatus(organizerAddress)
+
+      expect(result).toBe(true)
+    })
+
+    it('handles string responses', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue('true')
+
+      const result = await readOrganizerStatus(organizerAddress)
+
+      expect(result).toBe(true)
+    })
+
+    it('handles errors gracefully', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockRejectedValue(new Error('Network error'))
+
+      const result = await readOrganizerStatus(organizerAddress)
+
+      expect(result).toBe(false)
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Error checking organizer status'),
+        expect.any(Error)
+      )
+    })
+  })
+
+  describe('readAdminStatus', () => {
+    const adminAddress = 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+
+    it('returns true when user is admin', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue(true)
+
+      const result = await readAdminStatus(adminAddress)
+
+      expect(result).toBe(true)
+    })
+
+    it('returns false when user is not admin', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue(false)
+
+      const result = await readAdminStatus(adminAddress)
+
+      expect(result).toBe(false)
+    })
+
+    it('handles errors gracefully', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockRejectedValue(new Error('Network error'))
+
+      const result = await readAdminStatus(adminAddress)
+
+      expect(result).toBe(false)
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Error checking admin status'),
+        expect.any(Error)
+      )
+    })
+
+    it('performs case-insensitive comparison', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue(true)
+
+      const result = await readAdminStatus(adminAddress.toUpperCase())
+
+      expect(result).toBe(true)
+    })
+  })
+
+  describe('readUserTickets', () => {
+    const userAddress = 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+
+    it('returns user tickets successfully', async () => {
+      const mockTicketData = {
+        type: 'some',
+        value: {
+          type: 'tuple',
+          value: {
+            'event-id': { value: 1 },
+            owner: { value: userAddress },
+            'is-checked-in': { value: false },
+            'event-title': { value: 'Test Event' },
+            'event-date': { value: '2024-12-31' },
+            'event-time': { value: '18:00' },
+            price: { value: 1000000 },
+          },
+        },
+      }
+
+      mockStacksTransactions.fetchCallReadOnlyFunction
+        .mockResolvedValueOnce(2) // Total tickets
+        .mockResolvedValueOnce(mockTicketData) // Ticket data
+
+      const result = await readUserTickets(userAddress)
+
+      expect(Array.isArray(result)).toBe(true)
+      expect(result).toHaveLength(1)
+      expect(result[0]).toHaveProperty('eventId', 1)
+      expect(result[0]).toHaveProperty('owner', userAddress)
+      expect(result[0]).toHaveProperty('isCheckedIn', false)
+      expect(result[0]).toHaveProperty('status', 'active')
+    })
+
+    it('handles checked-in tickets', async () => {
+      const mockCheckedInTicket = {
+        type: 'some',
+        value: {
+          type: 'tuple',
+          value: {
+            'event-id': { value: 1 },
+            owner: { value: userAddress },
+            'is-checked-in': { value: true },
+            'event-title': { value: 'Test Event' },
+            'event-date': { value: '2024-12-31' },
+            'event-time': { value: '18:00' },
+            price: { value: 1000000 },
+          },
+        },
+      }
+
+      mockStacksTransactions.fetchCallReadOnlyFunction
+        .mockResolvedValueOnce(1)
+        .mockResolvedValueOnce(mockCheckedInTicket)
+
+      const result = await readUserTickets(userAddress)
+
+      expect(result[0]).toHaveProperty('isCheckedIn', true)
+      expect(result[0]).toHaveProperty('status', 'used')
+    })
+
+    it('handles no tickets found', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue(0)
+
+      const result = await readUserTickets(userAddress)
+
+      expect(result).toEqual([])
+    })
+
+    it('handles errors gracefully', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockRejectedValue(new Error('Network error'))
+
+      const result = await readUserTickets(userAddress)
+
+      expect(result).toEqual([])
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Error reading user tickets'),
+        expect.any(Error)
+      )
+    })
+  })
+
+  describe('testContractConnection', () => {
+    it('tests contract connection successfully', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue('test-result')
+
+      const result = await testContractConnection()
+
+      expect(result).toBe(true)
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Contract connection test successful')
+      )
+    })
+
+    it('handles contract not found', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockRejectedValue(
+        new Error('Contract not found')
+      )
+
+      const result = await testContractConnection()
+
+      expect(result).toBe(false)
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Contract connection test failed'),
+        expect.any(Error)
+      )
+    })
+
+    it('handles network errors', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockRejectedValue(
+        new Error('Network timeout')
+      )
+
+      const result = await testContractConnection()
+
+      expect(result).toBe(false)
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Contract connection test failed'),
+        expect.any(Error)
+      )
+    })
+  })
+
+  describe('edge cases and error handling', () => {
+    it('handles undefined window object', async () => {
+      const originalWindow = global.window
+      delete (global as any).window
+
+      const result = await testContractConnection()
+
+      expect(typeof result).toBe('boolean')
+
+      global.window = originalWindow
+    })
+
+    it('handles malformed network responses', async () => {
+      mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue(null)
+
+      const result = await readEvents()
+
+      expect(result).toEqual([])
+    })
+
+    it('logs comprehensive error details', async () => {
+      const error = new Error('Test error')
+      error.stack = 'Test stack trace'
+
+      mockStacksConnect.request.mockRejectedValue(error)
+      mockStacksTransactions.uintCV.mockImplementation((val) => ({ type: 'uint', value: val }))
+
+      try {
+        await buyTicket(1, 1000000, 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9')
+      } catch (e) {
+        // Expected to throw
+      }
+
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Contract call failed'),
+        error
+      )
+    })
+  })
+})
