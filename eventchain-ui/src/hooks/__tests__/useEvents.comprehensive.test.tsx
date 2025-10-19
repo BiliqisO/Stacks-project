@@ -82,7 +82,7 @@ describe('useEvents', () => {
         'total-tickets': 200,
         'tickets-sold': 100,
         image: 'QmTestHash',
-        creator: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+        creator: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
       },
     }
 

@@ -2,9 +2,6 @@
 ;; EventChain Rendezvous Tests - Property-Based Testing
 ;; =============================================================================
 
-;; Import the main contract
-(use-trait event-trait .eventchain.event-trait)
-
 ;; =============================================================================
 ;; INVARIANT TESTS
 ;; =============================================================================
@@ -73,7 +70,7 @@
               (err "event not found after creation"))
           error (if (is-eq error u403) ;; ERR_NOT_AUTHORIZED
                    (ok "not authorized - acceptable")
-                   (err "unexpected error"))))))
+                   (err "unexpected error")))))))
 
 ;; Property: Ticket purchases should maintain state consistency
 (define-public (property-buy-ticket-consistency (event-id uint))
@@ -99,10 +96,9 @@
                                  (asserts! (not (get used ticket-data)) (err "new ticket marked as used"))
                                  (asserts! (is-eq (get ticket-id ticket-data) ticket-id) (err "ticket ID mismatch"))
                                  (ok "purchase-success"))
-                               (err "ticket not found after purchase"))
-                             (ok "state-verified"))
+                               (err "ticket not found after purchase")))
                            (err "event not found after purchase"))
-                       error (ok "purchase-failed-acceptable"))))
+                       error (ok "purchase-failed-acceptable")))))
     (ok "event-not-found")))
 
 ;; Property: Valid transfers should preserve ticket integrity

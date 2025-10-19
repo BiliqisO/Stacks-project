@@ -55,7 +55,7 @@ describe("EventChain Contract", () => {
       deployer
     );
 
-    expect(createEventCall.result.type).toBe(7); 
+    expect(createEventCall.result.type).toBe('ok'); 
   });
 
   it("should store creation timestamp when creating an event", () => {
@@ -92,13 +92,13 @@ describe("EventChain Contract", () => {
     );
 
     // Verify the event has a created-timestamp field
-    expect(getEventCall.result.type).toBe(10); // some type
+    expect(getEventCall.result.type).toBe('some'); // some type
     if (getEventCall.result.type === 10) {
       const eventData = (getEventCall.result as any).value;
       // Access the data property which contains the actual event fields
       const createdTimestamp = eventData.data["created-timestamp"];
       expect(createdTimestamp).toBeDefined();
-      expect(createdTimestamp.type).toBe(1); // uint type
+      expect(createdTimestamp.type).toBe('uint'); // uint type
       expect(Number(createdTimestamp.value)).toBeGreaterThan(0);
     }
   });
@@ -136,7 +136,7 @@ describe("EventChain Contract", () => {
       user1
     );
 
-    expect(buyTicketCall.result.type).toBe(7); // ok type
+    expect(buyTicketCall.result.type).toBe('ok'); // ok type
   });
   it("should add an organizer (by admin)", () => {
     const addCall = simnet.callPublicFn(
@@ -171,8 +171,8 @@ describe("EventChain Contract", () => {
       organizer
     );
     // Check that the result is successful (ok) and contains a valid event ID
-    expect(call.result.type).toBe(7); // ok type
-    expect((call.result as any).value.type).toBe(1); // uint type
+    expect(call.result.type).toBe('ok'); // ok type
+    expect((call.result as any).value.type).toBe('uint'); // uint type
     expect(Number((call.result as any).value.value)).toBeGreaterThan(0);
   });
 
@@ -205,7 +205,7 @@ describe("EventChain Contract", () => {
       [Cl.uint(1)],
       buyer
     );
-    expect(buy.result.type).toBe(7); // ok type
+    expect(buy.result.type).toBe('ok'); // ok type
   });
 
   it("buyer should transfer ticket to another user", () => {
@@ -326,7 +326,7 @@ describe("EventChain - Edge Case Tests", () => {
           user1
         );
   
-        expect(transferResult.result.type).toBe(8); // Should fail
+        expect(transferResult.result.type).toBe('err'); // Should fail
 
       });
 
@@ -659,7 +659,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
       // This might not be 0 if tests interfere, but let's log it
       console.log("Count result for isolated organizer (buyer):", countResult.result);
       // Just check it's a valid uint result for now
-      expect(countResult.result.type).toBe(1); // uint type
+      expect(countResult.result.type).toBe('uint'); // uint type
     });
 
     it("should return correct count for organizer with one event - isolated", () => {
@@ -701,7 +701,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
       console.log("Count result for isolated organizer after 1 event:", countResult.result);
       
       // Just check it's a valid uint result for now
-      expect(countResult.result.type).toBe(1); // uint type
+      expect(countResult.result.type).toBe('uint'); // uint type
       // We expect it to be at least 1 if the event was created
       expect(Number(countResult.result.value)).toBeGreaterThanOrEqual(1);
     });
@@ -771,7 +771,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
       console.log("Count result for organizer with 3 events:", countResult.result);
       
       // Just check it's a valid uint result for now
-      expect(countResult.result.type).toBe(1); // uint type
+      expect(countResult.result.type).toBe('uint'); // uint type
       // We expect it to be at least 3 if all events were created
       expect(Number(countResult.result.value)).toBeGreaterThanOrEqual(3);
     });
@@ -897,7 +897,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
       expect(org1Count).toBeGreaterThanOrEqual(2n);
       
       // Verify the specific events created in this test are included
-      const org1EventsList = (org1EventsResult.result as any).list;
+      const org1EventsList = (org1EventsResult.result as any).value;
       const org1EventIds = org1EventsList.map((item: any) => item.value);
       expect(org1EventIds).toContain(org1EventId1);
       expect(org1EventIds).toContain(org1EventId2);
@@ -1144,7 +1144,7 @@ describe("EventChain - Organizer-specific Function Tests (Isolated)", () => {
       expect(countAfterValue).toEqual(countBeforeValue);
       
       // Verify the created event is included in the list
-      const eventsAfterList = (eventsAfter.result as any).list;
+      const eventsAfterList = (eventsAfter.result as any).value;
       const eventIds = eventsAfterList.map((item: any) => item.value);
       expect(eventIds).toContain(eventId);
     });

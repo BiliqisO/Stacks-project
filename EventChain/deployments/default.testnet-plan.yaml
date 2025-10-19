@@ -9,10 +9,10 @@ plan:
     - id: 0
       transactions:
         - contract-publish:
-            contract-name: eventchain-v5
-            expected-sender: ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9
-            cost: 631900
-            path: contracts/eventchain.clar
+            contract-name: eventchain
+            expected-sender: ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9
+            cost: 212500
+            path: contracts/Eventchain.clar
             anchor-block-only: true
             clarity-version: 3
       epoch: "3.1"

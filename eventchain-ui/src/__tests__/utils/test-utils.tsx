@@ -6,13 +6,13 @@ import { ModeProvider } from '@/contexts/ModeContext'
 // Mock useStacks hook before importing ModeProvider
 jest.mock('@/hooks/useStacks', () => ({
   useStacks: jest.fn(() => ({
-    address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+    address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
     isSignedIn: true,
     userData: {
       profile: {
         stxAddress: {
-          testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
-          mainnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+          testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
+          mainnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         },
       },
     },
@@ -37,8 +37,8 @@ jest.mock('@/lib/stacks-utils', () => ({
     loadUserData: jest.fn().mockReturnValue({
       profile: {
         stxAddress: {
-          testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
-          mainnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+          testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
+          mainnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         },
       },
     }),
@@ -52,13 +52,13 @@ export const MockStacksProvider = ({ children }: { children: React.ReactNode }) 
 
 // Mock wallet state
 export const mockWalletState = {
-  address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+  address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
   isSignedIn: true,
   userData: {
     profile: {
       stxAddress: {
-        testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
-        mainnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+        testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
+        mainnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
       },
     },
   },
@@ -79,10 +79,10 @@ export const mockEvents = [
     ticketsSold: 25,
     category: 'technology',
     image: '',
-    organizer: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+    organizer: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
     attendees: 25,
     result: {
-      creator: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      creator: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
       name: 'Test Event 1',
       location: 'Test Location',
       timestamp: 1735689600,
@@ -105,10 +105,10 @@ export const mockEvents = [
     ticketsSold: 10,
     category: 'art',
     image: '',
-    organizer: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+    organizer: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
     attendees: 10,
     result: {
-      creator: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      creator: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
       name: 'Test Event 2',
       location: 'Another Test Location',
       timestamp: 1736976600,

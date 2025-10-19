@@ -18,7 +18,7 @@ const mockBlockchainEvent = {
   value: {
     type: 'tuple',
     value: {
-      creator: { type: 'principal', value: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' },
+      creator: { type: 'principal', value: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' },
       name: { type: 'string-utf8', value: 'Test Event' },
       location: { type: 'string-utf8', value: 'Test Location' },
       timestamp: { type: 'uint', value: 1735689600 },
@@ -172,7 +172,7 @@ describe('useEvent', () => {
 
       // Verify event data is loaded correctly for buying
       expect(result.current.event?.price).toBe('1000000')
-      expect(result.current.event?.creator).toBe('ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9')
+      expect(result.current.event?.creator).toBe('ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9')
       expect(result.current.event?.totalTickets).toBe(100)
       expect(result.current.event?.ticketsSold).toBe(25)
     })

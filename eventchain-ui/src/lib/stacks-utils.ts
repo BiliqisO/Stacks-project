@@ -570,7 +570,7 @@ export const readAllOrganizerStats = async () => {
     console.log("Fetching all organizer stats...");
 
     // For now, let's manually check the known organizer from your event
-    const knownOrganizerAddress = "ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9";
+    const knownOrganizerAddress = "ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9";
     console.log("Checking known organizer:", knownOrganizerAddress);
 
     // Check if this address is an organizer and get their events

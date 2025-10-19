@@ -47,7 +47,7 @@ describe('stacks-config', () => {
   })
 
   it('should have correct contract configuration', () => {
-    expect(STACKS_CONFIG.contractName).toBe('eventchain-v5')
+    expect(STACKS_CONFIG.contractName).toBe('eventchain')
     expect(STACKS_CONFIG.appName).toBe('EventChain')
   })
 })
@@ -137,7 +137,7 @@ describe('Ticket data transformation', () => {
   it('should handle ticket structure', () => {
     const mockTicket = {
       'event-id': { value: 1 },
-      owner: { value: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' },
+      owner: { value: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' },
       'is-checked-in': { value: false },
       price: { value: 1000000 },
     }
@@ -190,7 +190,7 @@ describe('Error handling', () => {
 describe('Address validation', () => {
   it('should recognize valid Stacks addresses', () => {
     const validAddresses = [
-      'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
       'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
     ]
 
@@ -284,6 +284,6 @@ describe('Configuration values', () => {
   })
 
   it('should have contract name', () => {
-    expect(STACKS_CONFIG.contractName).toBe('eventchain-v5')
+    expect(STACKS_CONFIG.contractName).toBe('eventchain')
   })
 })

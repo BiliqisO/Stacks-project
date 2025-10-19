@@ -115,7 +115,7 @@ describe('TicketQRCode Component', () => {
     ticketId: '123',
     eventId: '1',
     eventTitle: 'Test Event',
-    ownerAddress: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+    ownerAddress: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
     eventDate: '2024-12-31',
     eventTime: '20:00',
     location: 'Test Venue',
@@ -271,7 +271,7 @@ describe('WalletConnect Component', () => {
     ;(useStacks as jest.Mock).mockReturnValue({
       userData: {},
       isSignedIn: true,
-      address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
     })
 
     render(<WalletConnect />)
@@ -292,7 +292,7 @@ describe('WalletConnect Component', () => {
     ;(useStacks as jest.Mock).mockReturnValue({
       userData: {},
       isSignedIn: true,
-      address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
     })
 
     render(<WalletConnect />)
@@ -308,7 +308,7 @@ describe('WalletConnect Component', () => {
   })
 
   it('should truncate long addresses', () => {
-    const longAddress = 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+    const longAddress = 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9'
     ;(useStacks as jest.Mock).mockReturnValue({
       userData: {},
       isSignedIn: true,

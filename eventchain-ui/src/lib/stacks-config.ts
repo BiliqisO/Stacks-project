@@ -3,10 +3,10 @@ import { STACKS_TESTNET } from "@stacks/network";
 export const NETWORK = STACKS_TESTNET;
 export const CONTRACT_ADDRESS =
   process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
-  "ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9";
+  "ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9";
 
 export const CONTRACT_NAME =
-  process.env.NEXT_PUBLIC_CONTRACT_NAME || "eventchain-v5";
+  process.env.NEXT_PUBLIC_CONTRACT_NAME || "eventchain";
 
 // Ensure network has coreApiUrl property
 const networkInstance = NETWORK;

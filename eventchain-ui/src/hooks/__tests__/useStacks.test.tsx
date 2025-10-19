@@ -70,7 +70,7 @@ describe('useStacks', () => {
       mockConnect.isConnected.mockReturnValue(true)
       mockConnect.getLocalStorage.mockReturnValue({
         addresses: {
-          stx: [{ address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' }]
+          stx: [{ address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' }]
         },
       })
       mockStacksUtils.userSession.isUserSignedIn.mockReturnValue(false)
@@ -82,7 +82,7 @@ describe('useStacks', () => {
 
       // Wait for effect to run
       await waitFor(() => {
-        expect(result.current.address).toBe('ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9')
+        expect(result.current.address).toBe('ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9')
       })
 
       expect(result.current.isSignedIn).toBe(true)
@@ -94,8 +94,8 @@ describe('useStacks', () => {
     const mockUserData = {
       profile: {
         stxAddress: {
-          testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
-          mainnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+          testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
+          mainnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         },
       },
     }
@@ -111,7 +111,7 @@ describe('useStacks', () => {
 
       expect(result.current.userData).toBe(mockUserData)
       expect(result.current.isSignedIn).toBe(true)
-      expect(result.current.address).toBe('ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9')
+      expect(result.current.address).toBe('ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9')
     })
   })
 
@@ -119,8 +119,8 @@ describe('useStacks', () => {
     const mockUserData = {
       profile: {
         stxAddress: {
-          testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
-          mainnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+          testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
+          mainnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         },
       },
     }
@@ -142,7 +142,7 @@ describe('useStacks', () => {
 
       expect(result.current.userData).toBe(mockUserData)
       expect(result.current.isSignedIn).toBe(true)
-      expect(result.current.address).toBe('ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9')
+      expect(result.current.address).toBe('ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9')
     })
   })
 

@@ -6,9 +6,9 @@ import * as stacksUtils from '@/lib/stacks-utils'
 // Mock useStacks hook
 jest.mock('@/hooks/useStacks', () => ({
   useStacks: jest.fn(() => ({
-    address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+    address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
     isSignedIn: true,
-    userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+    userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
     isSignInPending: false,
   })),
 }))
@@ -26,7 +26,7 @@ const mockTickets = [
   {
     id: '1-ST2EC0-1',
     eventId: 1,
-    owner: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+    owner: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
     isCheckedIn: false,
     status: 'active',
     eventTitle: 'Test Event 1',
@@ -38,7 +38,7 @@ const mockTickets = [
   {
     id: '2-ST2EC0-1',
     eventId: 2,
-    owner: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+    owner: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
     isCheckedIn: true,
     status: 'used',
     eventTitle: 'Test Event 2',
@@ -101,9 +101,9 @@ describe('useTickets', () => {
     beforeEach(() => {
       const { useStacks } = require('@/hooks/useStacks')
       useStacks.mockReturnValue({
-        address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+        address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         isSignedIn: true,
-        userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+        userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
         isSignInPending: false,
       })
       mockReadUserTickets.mockResolvedValue(mockTickets)
@@ -120,7 +120,7 @@ describe('useTickets', () => {
 
       expect(result.current.tickets).toHaveLength(2)
       expect(result.current.error).toBeNull()
-      expect(mockReadUserTickets).toHaveBeenCalledWith('ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9')
+      expect(mockReadUserTickets).toHaveBeenCalledWith('ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9')
     })
 
     it('handles empty tickets array', async () => {
@@ -141,9 +141,9 @@ describe('useTickets', () => {
     beforeEach(() => {
       const { useStacks } = require('@/hooks/useStacks')
       useStacks.mockReturnValue({
-        address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+        address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         isSignedIn: true,
-        userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+        userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
         isSignInPending: false,
       })
     })
@@ -181,9 +181,9 @@ describe('useTickets', () => {
     beforeEach(() => {
       const { useStacks } = require('@/hooks/useStacks')
       useStacks.mockReturnValue({
-        address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+        address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         isSignedIn: true,
-        userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+        userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
         isSignInPending: false,
       })
     })
@@ -258,9 +258,9 @@ describe('useTickets', () => {
 
       // Set initial address
       useStacks.mockReturnValue({
-        address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+        address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         isSignedIn: true,
-        userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+        userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
         isSignInPending: false,
       })
 
@@ -300,9 +300,9 @@ describe('useTickets', () => {
 
       // Set initial address
       useStacks.mockReturnValue({
-        address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+        address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         isSignedIn: true,
-        userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+        userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
         isSignInPending: false,
       })
 
@@ -334,9 +334,9 @@ describe('useTickets', () => {
     beforeEach(() => {
       const { useStacks } = require('@/hooks/useStacks')
       useStacks.mockReturnValue({
-        address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+        address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         isSignedIn: true,
-        userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+        userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
         isSignInPending: false,
       })
     })
@@ -399,9 +399,9 @@ describe('useTickets', () => {
     beforeEach(() => {
       const { useStacks } = require('@/hooks/useStacks')
       useStacks.mockReturnValue({
-        address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+        address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         isSignedIn: true,
-        userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+        userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
         isSignInPending: false,
       })
       mockReadUserTickets.mockResolvedValue(mockTickets)

@@ -9,7 +9,7 @@ cache_dir = "./.cache"
 # path = "contracts/counter.clar"
 
 [contracts.eventchain]
-path = 'contracts/eventchain.clar'
+path = 'contracts/Eventchain.clar'
 clarity_version = 3
 epoch = 3.1
 

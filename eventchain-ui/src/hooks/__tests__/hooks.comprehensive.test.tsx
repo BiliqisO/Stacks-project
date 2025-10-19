@@ -24,8 +24,8 @@ jest.mock('@/lib/stacks-utils', () => ({
   },
   STACKS_CONFIG: {
     network: {},
-    contractAddress: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
-    contractName: 'eventchain-v5',
+    contractAddress: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
+    contractName: 'eventchain',
   },
 }))
 
@@ -87,7 +87,7 @@ describe('useEvents Hook', () => {
               'total-tickets': { value: 100 },
               'tickets-sold': { value: 50 },
               image: { value: 'QmHash1' },
-              creator: { value: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' },
+              creator: { value: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' },
             },
           },
         },
@@ -159,7 +159,7 @@ describe('useEvent Hook', () => {
           'total-tickets': { value: 200 },
           'tickets-sold': { value: 100 },
           image: { value: 'QmHash2' },
-          creator: { value: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' },
+          creator: { value: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' },
         },
       },
     }
@@ -206,7 +206,7 @@ describe('useEvent Hook', () => {
           'total-tickets': { value: 100 },
           'tickets-sold': { value: 50 },
           image: { value: 'QmHash' },
-          creator: { value: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' },
+          creator: { value: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' },
         },
       },
     }
@@ -261,9 +261,9 @@ describe('useTickets Hook', () => {
     ]
 
     ;(useStacks as jest.Mock).mockReturnValue({
-      userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+      userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
       isSignedIn: true,
-      address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
       isSignInPending: false,
     })
     mockReadUserTickets.mockResolvedValue(mockTickets as any)
@@ -287,9 +287,9 @@ describe('useTickets Hook', () => {
 
   it('should handle ticket fetch errors', async () => {
     ;(useStacks as jest.Mock).mockReturnValue({
-      userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+      userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
       isSignedIn: true,
-      address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
       isSignInPending: false,
     })
     mockReadUserTickets.mockRejectedValue(new Error('Failed to fetch'))
@@ -329,12 +329,12 @@ describe('useStacks Hook', () => {
       userData: {
         profile: {
           stxAddress: {
-            testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+            testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
           },
         },
       },
       isSignedIn: true,
-      address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
       isSignInPending: false,
     })
 
@@ -348,12 +348,12 @@ describe('useStacks Hook', () => {
       userData: {
         profile: {
           stxAddress: {
-            testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+            testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
           },
         },
       },
       isSignedIn: true,
-      address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
       isSignInPending: false,
     })
 

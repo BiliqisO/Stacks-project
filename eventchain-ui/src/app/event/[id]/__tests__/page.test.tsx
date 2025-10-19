@@ -20,8 +20,8 @@ jest.mock('@/lib/stacks-utils', () => ({
   },
   STACKS_CONFIG: {
     network: {},
-    contractAddress: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
-    contractName: 'eventchain-v5',
+    contractAddress: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
+    contractName: 'eventchain',
   },
 }))
 
@@ -58,7 +58,7 @@ const mockEvent = {
   price: '1000000',
   priceDisplay: '1 STX',
   image: 'QmTestHash123',
-  creator: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+  creator: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
   organizer: {
     name: 'TechEvents',
     avatar: 'QmOrganizerAvatar',
@@ -270,9 +270,9 @@ describe('EventDetailPage', () => {
   describe('event loaded - organizer view', () => {
     beforeEach(() => {
       mockUseStacks.mockReturnValue({
-        userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+        userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
         isSignedIn: true,
-        address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+        address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9'
       })
       mockUseEvent.mockReturnValue({
         event: mockEvent,
@@ -369,7 +369,7 @@ describe('EventDetailPage', () => {
       fireEvent.click(buyButton)
 
       await waitFor(() => {
-        expect(mockBuyTicket).toHaveBeenCalledWith(1, 1000000, 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9')
+        expect(mockBuyTicket).toHaveBeenCalledWith(1, 1000000, 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9')
       })
 
       expect(alertSpy).toHaveBeenCalledWith('1 ticket(s) purchase initiated! Please check your wallet.')
@@ -445,9 +445,9 @@ describe('EventDetailPage', () => {
   describe('schedule management', () => {
     beforeEach(() => {
       mockUseStacks.mockReturnValue({
-        userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+        userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
         isSignedIn: true,
-        address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+        address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9'
       })
       mockUseEvent.mockReturnValue({
         event: mockEvent,
@@ -514,9 +514,9 @@ describe('EventDetailPage', () => {
   describe('speaker management', () => {
     beforeEach(() => {
       mockUseStacks.mockReturnValue({
-        userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+        userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
         isSignedIn: true,
-        address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+        address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9'
       })
       mockUseEvent.mockReturnValue({
         event: mockEvent,

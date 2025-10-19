@@ -102,9 +102,9 @@ describe('ModeContext', () => {
 
     const { useStacks } = require('@/hooks/useStacks')
     useStacks.mockReturnValue({
-      address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
       isSignedIn: true,
-      userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+      userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
     })
 
     render(
@@ -146,9 +146,9 @@ describe('ModeContext', () => {
 
     const { useStacks } = require('@/hooks/useStacks')
     useStacks.mockReturnValue({
-      address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
       isSignedIn: true,
-      userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+      userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
     })
 
     render(
@@ -204,9 +204,9 @@ describe('ModeContext Edge Cases', () => {
 
     const { useStacks } = require('@/hooks/useStacks')
     useStacks.mockReturnValue({
-      address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
       isSignedIn: true,
-      userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+      userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
     })
 
     const { rerender } = render(

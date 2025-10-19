@@ -79,8 +79,8 @@ describe('stacks-utils comprehensive tests', () => {
     mockUserSession.loadUserData.mockReturnValue({
       profile: {
         stxAddress: {
-          testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
-          mainnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+          testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
+          mainnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         },
       },
     })
@@ -207,7 +207,7 @@ describe('stacks-utils comprehensive tests', () => {
     const ticketData = {
       eventId: 1,
       price: 1000000,
-      creatorAddress: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+      creatorAddress: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
     }
 
     it('buys ticket successfully', async () => {
@@ -266,7 +266,7 @@ describe('stacks-utils comprehensive tests', () => {
         value: {
           type: 'tuple',
           value: {
-            creator: { value: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' },
+            creator: { value: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' },
             name: { value: 'Test Event' },
             location: { value: 'Test Location' },
             timestamp: { value: 1735689600 },
@@ -319,7 +319,7 @@ describe('stacks-utils comprehensive tests', () => {
   })
 
   describe('readOrganizerStatus', () => {
-    const organizerAddress = 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+    const organizerAddress = 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9'
 
     it('returns true for valid organizer', async () => {
       mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue(true)
@@ -374,7 +374,7 @@ describe('stacks-utils comprehensive tests', () => {
   })
 
   describe('readAdminStatus', () => {
-    const adminAddress = 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+    const adminAddress = 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9'
 
     it('returns true when user is admin', async () => {
       mockStacksTransactions.fetchCallReadOnlyFunction.mockResolvedValue(true)
@@ -414,7 +414,7 @@ describe('stacks-utils comprehensive tests', () => {
   })
 
   describe('readUserTickets', () => {
-    const userAddress = 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+    const userAddress = 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9'
 
     it('returns user tickets successfully', async () => {
       const mockTicketData = {
@@ -564,7 +564,7 @@ describe('stacks-utils comprehensive tests', () => {
       mockStacksTransactions.uintCV.mockImplementation((val) => ({ type: 'uint', value: val }))
 
       try {
-        await buyTicket(1, 1000000, 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9')
+        await buyTicket(1, 1000000, 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9')
       } catch (e) {
         // Expected to throw
       }

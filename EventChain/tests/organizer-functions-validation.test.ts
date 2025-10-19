@@ -183,9 +183,9 @@ describe("Organizer Functions - Validation Tests", () => {
     });
 
     // Validate that event lists have the correct lengths
-    expect(org1Events.result.type).toBe(11); // list type
-    expect(org2Events.result.type).toBe(11); // list type
-    expect(org3Events.result.type).toBe(11); // list type
+    expect(org1Events.result.type).toBe('list'); // list type
+    expect(org2Events.result.type).toBe('list'); // list type
+    expect(org3Events.result.type).toBe('list'); // list type
 
     if (org1Events.result.type === 11) {
       // Org1 should have gained 2 more events
@@ -232,7 +232,7 @@ describe("Organizer Functions - Validation Tests", () => {
     const countValue = (count.result as any).value;
     expect(countValue).toBeLessThanOrEqual(3n);
 
-    const eventsList = (events.result as any).list;
+    const eventsList = (events.result as any).value;
     expect(eventsList.length).toBeLessThanOrEqual(3);
 
     console.log("Non-existent organizer test PASSED");

@@ -117,9 +117,9 @@ describe('OrganizerDashboard', () => {
   describe('when user is signed in', () => {
     beforeEach(() => {
       mockUseStacks.mockReturnValue({
-        userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+        userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
         isSignedIn: true,
-        address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+        address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9'
       })
     })
 

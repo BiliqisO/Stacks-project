@@ -58,7 +58,7 @@ describe('Utility Functions Coverage', () => {
     })
 
     it('should have correct contract name', () => {
-      expect(STACKS_CONFIG.contractName).toBe('eventchain-v5')
+      expect(STACKS_CONFIG.contractName).toBe('eventchain')
     })
 
     it('should have correct app name', () => {
@@ -155,7 +155,7 @@ describe('Data Transformation Logic', () => {
   describe('Address Validation', () => {
     it('should validate Stacks testnet addresses', () => {
       const validAddresses = [
-        'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+        'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
         'ST3N4AJFZZYC4BK99H53XP8KDGXFGQ2PRSPNET8TN',
       ]
@@ -182,7 +182,7 @@ describe('Data Transformation Logic', () => {
     })
 
     it('should validate address length', () => {
-      const addr = 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+      const addr = 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9'
       expect(addr.length).toBe(41)
     })
   })
@@ -256,7 +256,7 @@ describe('Data Transformation Logic', () => {
     })
 
     it('should truncate addresses for display', () => {
-      const addr = 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+      const addr = 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9'
       const short = `${addr.slice(0, 6)}...${addr.slice(-4)}`
       expect(short.length).toBeLessThan(addr.length)
       expect(short).toContain('...')

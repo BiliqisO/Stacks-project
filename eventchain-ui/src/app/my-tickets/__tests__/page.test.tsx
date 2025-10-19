@@ -114,9 +114,9 @@ describe('MyTicketsPage', () => {
   describe('when user is signed in', () => {
     beforeEach(() => {
       mockUseStacks.mockReturnValue({
-        userData: { profile: { stxAddress: { testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' } } },
+        userData: { profile: { stxAddress: { testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' } } },
         isSignedIn: true,
-        address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9'
+        address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9'
       })
     })
 
@@ -320,7 +320,7 @@ describe('MyTicketsPage', () => {
           expect(qrData.ticketId).toBe('TKT-001')
           expect(qrData.eventId).toBe('1')
           expect(qrData.eventTitle).toBe('Blockchain Conference 2024')
-          expect(qrData.ownerAddress).toBe('ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9')
+          expect(qrData.ownerAddress).toBe('ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9')
           expect(qrData.eventDate).toBe('2024-03-15')
           expect(qrData.eventTime).toBe('10:00 AM')
           expect(qrData.location).toBe('San Francisco, CA')

@@ -8,8 +8,8 @@ export const mockStacksConnect = {
     loadUserData: jest.fn(() => ({
       profile: {
         stxAddress: {
-          testnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
-          mainnet: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+          testnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
+          mainnet: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         },
       },
     })),
@@ -23,7 +23,7 @@ export const mockStacksConnect = {
     addresses: {
       stx: [
         {
-          address: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9',
+          address: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9',
         },
       ],
     },
@@ -50,7 +50,7 @@ export const mockStacksTransactions = {
           value: {
             type: 'tuple',
             value: {
-              creator: { value: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' },
+              creator: { value: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' },
               name: { value: 'Test Event' },
               location: { value: 'Test Location' },
               timestamp: { value: 1735689600 },
@@ -64,7 +64,7 @@ export const mockStacksTransactions = {
       case 'is-organizer':
         return Promise.resolve({ type: 'bool', value: true })
       case 'get-admin':
-        return Promise.resolve({ type: 'principal', value: 'ST2EC0NW05CA1PK148ZTPJMFH8NPY0ZWM1RCJNFB9' })
+        return Promise.resolve({ type: 'principal', value: 'ST2W9HYNVNNPXH0G6Z33TBKV61HBGBNJG1DSRA4Y9' })
       case 'get-ticket':
         return Promise.resolve({
           type: 'some',
