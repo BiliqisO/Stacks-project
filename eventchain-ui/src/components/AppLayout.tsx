@@ -48,26 +48,27 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className={`
-          w-64 border-r bg-card min-h-screen
-          ${sidebarOpen ? 'block' : 'hidden'} md:block
-          transition-all duration-200
-        `}>
-          {mode === "organizer" ? <OrganizerNav /> : <AttendeeNav />}
-        </aside>
-
+      <div className="flex relative">
         {/* Mobile overlay */}
         {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-10 md:hidden" 
+          <div
+            className="fixed inset-0 bg-black/50 z-20 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
+        {/* Sidebar */}
+        <aside className={`
+          w-64 border-r bg-card min-h-screen
+          fixed md:sticky top-0 left-0 z-30 md:z-0
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
+          transition-transform duration-200 ease-in-out
+        `}>
+          {mode === "organizer" ? <OrganizerNav /> : <AttendeeNav />}
+        </aside>
+
         {/* Main content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 md:ml-0">
           {children}
         </main>
       </div>
