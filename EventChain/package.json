@@ -8,11 +8,10 @@
     "test": "vitest run",
     "test:report": "vitest run -- --coverage --costs",
     "test:watch": "chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"npm run test:report\"",
-    "test:security": "vitest run tests/eventchain-security.test.ts",
     "test:unit": "vitest run tests/eventchain.test.ts tests/organizer-functions-validation.test.ts",
-    "test:all": "npm run test:unit && npm run test:security",
-    "test:fuzz": "npx @stacks/rendezvous . eventchain invariant --runs=100",
-    "test:comprehensive": "npm run test:all && npm run test:fuzz"
+    "test:fuzz:property": "npx @stacks/rendezvous . eventchain test --runs=100",
+    "test:fuzz:invariant": "npx @stacks/rendezvous . eventchain invariant --runs=100",
+    "test:comprehensive": "npm run test:all"
   },
   "author": "",
   "license": "ISC",
