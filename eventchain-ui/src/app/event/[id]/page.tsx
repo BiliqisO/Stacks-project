@@ -62,7 +62,7 @@ export default function EventDetailPage({
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const { isSignedIn, address } = useStacks();
-  const { event, isLoading, error, updateEventData } = useEvent(params.id);
+  const { event, isLoading, error, refetch, updateEventData } = useEvent(params.id);
 
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
   const [newScheduleItem, setNewScheduleItem] = useState<ScheduleItem>({
@@ -301,7 +301,7 @@ export default function EventDetailPage({
         </header>
         <div className="container mx-auto px-4 py-16 text-center">
           <p className="text-red-500 mb-4">{error || "Event not found"}</p>
-          <Button onClick={() => window.location.reload()}>Try Again</Button>
+          <Button onClick={refetch}>Try Again</Button>
         </div>
       </div>
     );

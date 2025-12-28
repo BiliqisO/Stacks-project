@@ -41,7 +41,7 @@ async function callContractWithRequest(options: any) {
   }
 }
 
-export const connectWallet = async () => {
+export const connectWallet = async (onSuccess?: () => void) => {
   console.log("=== Connect Wallet Debug ===");
 
   if (typeof window !== "undefined") {
@@ -59,9 +59,12 @@ export const connectWallet = async () => {
   try {
     await connect();
     console.log("Wallet connected successfully");
-    window.location.reload();
+    if (onSuccess) {
+      onSuccess();
+    }
   } catch (error) {
     console.error("Connection failed:", error);
+    throw error;
   }
 };
 
@@ -202,7 +205,8 @@ export const isTicketValid = async (ticketId: number) => {
 export const buyTicket = async (
   eventId: number,
   price: number,
-  creatorAddress: string
+  creatorAddress: string,
+  onSuccess?: (txId: string) => void
 ) => {
   console.log("=== Buy Ticket Debug ===");
   console.log("Event ID:", eventId);
@@ -245,10 +249,8 @@ export const buyTicket = async (
     onFinish: (data: any) => {
       console.log("✅ Ticket purchased successfully:", data);
       console.log("Transaction ID:", data.txId);
-      alert(`Ticket purchase successful! Transaction ID: ${data.txId}`);
-      // Refresh the page to show the new ticket
-      if (typeof window !== "undefined") {
-        setTimeout(() => window.location.reload(), 2000);
+      if (onSuccess) {
+        onSuccess(data.txId);
       }
     },
     onCancel: () => {
@@ -273,13 +275,8 @@ export const buyTicket = async (
     });
 
     console.log("✅ Buy ticket transaction submitted:", response);
-    alert(
-      `Ticket purchase initiated! Transaction ID: ${response}\n\nNote: In the improved contract, this will return your Ticket ID for easy check-in.`
-    );
-
-    // Refresh the page to show the new ticket
-    if (typeof window !== "undefined") {
-      setTimeout(() => window.location.reload(), 2000);
+    if (onSuccess) {
+      onSuccess(response as string);
     }
 
     return response;

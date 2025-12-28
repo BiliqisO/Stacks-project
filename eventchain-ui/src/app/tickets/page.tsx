@@ -38,7 +38,7 @@ import { TicketQRDialog } from "@/components/TicketQRDialog";
 import { type TicketQRData } from "@/components/TicketQRCode";
 
 export default function TicketsPage() {
-  const { tickets, transferHistory, isLoading, error } = useTickets();
+  const { tickets, transferHistory, isLoading, error, refetch } = useTickets();
   const { address, isSignedIn } = useStacks();
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [transferAddress, setTransferAddress] = useState("");
@@ -161,7 +161,7 @@ export default function TicketsPage() {
             {error && !isLoading && (
               <div className="text-center py-12">
                 <p className="text-red-500 mb-4">Failed to load tickets: {error}</p>
-                <Button onClick={() => window.location.reload()}>Retry</Button>
+                <Button onClick={refetch}>Retry</Button>
               </div>
             )}
             

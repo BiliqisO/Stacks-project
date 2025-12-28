@@ -85,7 +85,7 @@ export default function MyTicketsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="text-red-500 mb-4">Error loading tickets: {error}</p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
+            <Button onClick={refetch}>Retry</Button>
           </CardContent>
         </Card>
       ) : tickets.length > 0 ? (

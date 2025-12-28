@@ -9,6 +9,17 @@ import { Wallet, LogOut } from "lucide-react";
 export function WalletConnect() {
   const { address, isSignedIn } = useStacks();
 
+  const handleConnect = async () => {
+    try {
+      await connectWallet(() => {
+        // Reload user data after successful connection
+        window.location.reload();
+      });
+    } catch (error) {
+      console.error("Failed to connect wallet:", error);
+    }
+  };
+
   if (isSignedIn && address) {
     return (
       <div className="flex items-center space-x-2">
@@ -29,7 +40,7 @@ export function WalletConnect() {
   }
 
   return (
-    <Button onClick={connectWallet} size="sm">
+    <Button onClick={handleConnect} size="sm">
       <Wallet className="h-4 w-4 mr-2" />
       Connect Wallet
     </Button>

@@ -109,7 +109,7 @@ export default function HomePage() {
           {error && !isLoading && (
             <div className="text-center py-12">
               <p className="text-red-500 mb-4">Failed to load events: {error}</p>
-              <Button onClick={() => window.location.reload()}>Retry</Button>
+              <Button onClick={refetch}>Retry</Button>
             </div>
           )}
           
