@@ -10,6 +10,7 @@ import {
   MapPin,
   Download,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -49,17 +50,23 @@ export default function TicketsPage() {
 
   const handleTransfer = async () => {
     if (!selectedTicket || !transferAddress) return;
-    
+
     try {
       setIsTransferring(true);
       await transferTicket(selectedTicket.id, transferAddress);
-      alert(`Ticket transfer initiated to ${transferAddress}`);
+      toast.success("Ticket transfer initiated!", {
+        description: `Transferring to ${transferAddress.slice(0, 6)}...${transferAddress.slice(-4)}`,
+      });
       setIsTransferDialogOpen(false);
       setTransferAddress("");
       setSelectedTicket(null);
+      // Refetch tickets to update UI
+      refetch();
     } catch (error) {
       console.error("Transfer failed:", error);
-      alert(`Transfer failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+      toast.error("Transfer failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     } finally {
       setIsTransferring(false);
     }

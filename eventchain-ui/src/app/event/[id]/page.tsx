@@ -41,6 +41,7 @@ import { buyTicket } from "@/lib/stacks-utils";
 import { useStacks } from "@/hooks/useStacks";
 import { useEvent } from "@/hooks/useEvent";
 import IPFSImage from "@/components/IPFSImage";
+import { toast } from "sonner";
 
 interface ScheduleItem {
   time: string;
@@ -86,26 +87,35 @@ export default function EventDetailPage({
 
   const handlePurchase = async () => {
     if (!isSignedIn) {
-      alert("Please connect your Stacks wallet first");
+      toast.error("Please connect your Stacks wallet first");
       return;
     }
 
     if (!event) {
-      alert("Event data not loaded");
+      toast.error("Event data not loaded");
       return;
     }
 
     setIsPurchasing(true);
     try {
       for (let i = 0; i < ticketQuantity; i++) {
-        await buyTicket(event.id, Number.parseInt(event.price), event.creator);
+        await buyTicket(event.id, Number.parseInt(event.price), event.creator, (txId) => {
+          toast.success("Ticket purchased successfully!", {
+            description: `Transaction ID: ${txId.slice(0, 8)}...${txId.slice(-6)}`,
+            duration: 5000,
+          });
+        });
       }
-      alert(
-        `${ticketQuantity} ticket(s) purchase initiated! Please check your wallet.`
-      );
+      toast.success(`${ticketQuantity} ticket(s) purchase initiated!`, {
+        description: "Please check your wallet",
+      });
+      // Refetch event data to update ticket count
+      refetch();
     } catch (error) {
       console.error("Purchase failed:", error);
-      alert("Purchase failed. Please try again.");
+      toast.error("Purchase failed", {
+        description: error instanceof Error ? error.message : "Please try again",
+      });
     } finally {
       setIsPurchasing(false);
     }
@@ -224,7 +234,7 @@ export default function EventDetailPage({
     try {
       // Try to copy URL to clipboard
       await navigator.clipboard.writeText(url);
-      alert("Event link copied to clipboard!");
+      toast.success("Event link copied to clipboard!");
     } catch (error) {
       // If clipboard API fails, show a dialog with the link
       const shareData = `${text}\n\nEvent Link: ${url}`;
@@ -241,10 +251,13 @@ export default function EventDetailPage({
       
       try {
         document.execCommand("copy");
-        alert("Event details copied to clipboard!");
+        toast.success("Event details copied to clipboard!");
       } catch (err) {
-        // Final fallback - just show an alert with the URL
-        alert(`Share this event:\n\n${url}`);
+        // Final fallback - show the URL in a toast
+        toast.info("Share this event", {
+          description: url,
+          duration: 10000,
+        });
       }
       
       document.body.removeChild(textArea);

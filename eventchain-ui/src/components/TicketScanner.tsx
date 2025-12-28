@@ -7,18 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  QrCode, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
-  User, 
-  Calendar, 
-  MapPin, 
+import {
+  QrCode,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  User,
+  Calendar,
+  MapPin,
   DollarSign,
   Scan
 } from "lucide-react";
 import { parseTicketQR, type TicketQRData } from "@/components/TicketQRCode";
+import { toast } from "sonner";
 
 interface TicketScannerProps {
   eventId?: string;
@@ -232,8 +233,9 @@ export function TicketScanner({ eventId, onTicketCheckedIn }: TicketScannerProps
                         className="w-full"
                         onClick={() => {
                           // Here you would typically call a function to mark the ticket as used
-                          // For now, we'll just show a success message
-                          alert(`Ticket ${scanResult.ticket?.ticketId} checked in successfully!`);
+                          toast.success("Ticket checked in successfully!", {
+                            description: `Ticket ID: ${scanResult.ticket?.ticketId}`,
+                          });
                           reset();
                         }}
                       >

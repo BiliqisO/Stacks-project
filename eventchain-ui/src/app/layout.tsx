@@ -5,6 +5,7 @@ import "./globals.css"
 import { ModeProvider } from "@/contexts/ModeContext"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AppLayout } from "@/components/AppLayout"
+import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -33,6 +34,7 @@ export default function RootLayout({
               {children}
             </AppLayout>
           </ModeProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
